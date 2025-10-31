@@ -1,0 +1,81 @@
+{
+  "games": [
+    {
+      "id": "forest-shuffle",
+      "name": "Forest Shuffle"
+    },
+    {
+      "id": "forest-shuffle-dartmoor",
+      "name": "Forest Shuffle Dartmoor"
+    },
+    {
+      "id": "its-a-wonderful-world",
+      "name": "It's a Wonderful World"
+    },
+    {
+      "id": "7-wonders",
+      "name": "7 Wonders"
+    },
+    {
+      "id": "cant-stop",
+      "name": "Can't Stop"
+    },
+    {
+      "id": "lost-ruins-of-arnak",
+      "name": "Lost Ruins of Arnak"
+    },
+    {
+      "id": "terra-mystica",
+      "name": "Terra Mystica"
+    },
+    {
+      "id": "clans-of-caledonia",
+      "name": "Clans of Caledonia"
+    },
+    {
+      "id": "castle-combo",
+      "name": "Castle Combo"
+    },
+    {
+      "id": "the-guilds-of-merchants-and-explorers",
+      "name": "The Guilds of Merchants and Explorers"
+    }
+  ],
+  "players": [],
+  "stats": {
+    "gamesPlayed": {
+      "forest-shuffle": 0,
+      "forest-shuffle-dartmoor": 0,
+      "its-a-wonderful-world": 0,
+      "7-wonders": 0,
+      "cant-stop": 0,
+      "lost-ruins-of-arnak": 1,
+      "terra-mystica": 0,
+      "clans-of-caledonia": 0,
+      "castle-combo": 0,
+      "the-guilds-of-merchants-and-explorers": 0
+    },
+    "gamesSkipped": {
+      "forest-shuffle": 0,
+      "forest-shuffle-dartmoor": 0,
+      "its-a-wonderful-world": 0,
+      "7-wonders": 0,
+      "cant-stop": 0,
+      "lost-ruins-of-arnak": 0,
+      "terra-mystica": 0,
+      "clans-of-caledonia": 0,
+      "castle-combo": 0,
+      "the-guilds-of-merchants-and-explorers": 0
+    },
+    "lastPlayed": {
+      "lost-ruins-of-arnak": "2025-10-31T12:05:14.481Z"
+    },
+    "rerollsToday": 0,
+    "lastRerollDate": "Fri Oct 31 2025"
+  },
+  "session": {
+    "code": "",
+    "githubToken": "",
+    "githubRepo": ""
+  }
+}
