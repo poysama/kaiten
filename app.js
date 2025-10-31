@@ -284,14 +284,19 @@ class BoardGameSpinner {
     selectWinner() {
         if (this.data.games.length === 0) return;
 
-        // Calculate which game was selected
-        const normalizedRotation = this.currentRotation % (Math.PI * 2);
         const sliceAngle = (Math.PI * 2) / this.data.games.length;
 
-        // The pointer is at the top, so we need to find which slice is at the top
-        // Add PI/2 to account for the top position
-        const adjustedRotation = (Math.PI * 2 - normalizedRotation + Math.PI / 2) % (Math.PI * 2);
-        const selectedIndex = Math.floor(adjustedRotation / sliceAngle);
+        // The pointer is at the top of the wheel, which is at angle -π/2 in canvas coordinates
+        const pointerAngle = -Math.PI / 2;
+
+        // Calculate the angle from the start of game 0 to the pointer
+        let angleFromStart = pointerAngle - this.currentRotation;
+
+        // Normalize to 0-2π range (handle negative angles correctly)
+        angleFromStart = ((angleFromStart % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+
+        // Find which slice the pointer is pointing at
+        const selectedIndex = Math.floor(angleFromStart / sliceAngle) % this.data.games.length;
 
         this.selectedGame = this.data.games[selectedIndex];
         this.showResultModal();
