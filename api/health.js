@@ -2,18 +2,23 @@ import { Redis } from '@upstash/redis';
 
 // Initialize Redis client
 function getRedisConfig() {
-  const redisUrl = process.env.REDIS_URL;
-
-  if (!redisUrl) {
-    throw new Error('REDIS_URL environment variable is not set');
+  // First, try to use the REST API env vars if available
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return {
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    };
   }
 
-  // Parse the Redis URL
+  // Fallback: Try to parse REDIS_URL
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    throw new Error('No Redis environment variables found');
+  }
+
   const url = new URL(redisUrl);
   const password = url.password || url.username;
   const host = url.hostname;
-
-  // Construct Upstash REST API URL
   const restUrl = `https://${host}`;
 
   return {
@@ -22,8 +27,13 @@ function getRedisConfig() {
   };
 }
 
-const redisConfig = getRedisConfig();
-const redis = new Redis(redisConfig);
+let redis;
+try {
+  const redisConfig = getRedisConfig();
+  redis = new Redis(redisConfig);
+} catch (error) {
+  console.error('Failed to initialize Redis:', error);
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

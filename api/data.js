@@ -1,24 +1,33 @@
 import { Redis } from '@upstash/redis';
 
 // Initialize Redis client
-// REDIS_URL format: redis://default:password@host:port
-// Convert to REST API URL format that @upstash/redis expects
 function getRedisConfig() {
-  const redisUrl = process.env.REDIS_URL;
-
-  if (!redisUrl) {
-    throw new Error('REDIS_URL environment variable is not set');
+  // First, try to use the REST API env vars if available
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    console.log('[Redis] Using UPSTASH_REDIS_REST_URL and token');
+    return {
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    };
   }
 
-  // Parse the Redis URL
-  const url = new URL(redisUrl);
-  const password = url.password || url.username; // Password might be in either field
-  const host = url.hostname;
-  const port = url.port || '6379';
+  // Fallback: Try to parse REDIS_URL
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    throw new Error('No Redis environment variables found. Need either UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN or REDIS_URL');
+  }
 
-  // Construct Upstash REST API URLs
-  // Upstash Redis REST API is at the same host but with HTTPS
+  console.log('[Redis] Parsing REDIS_URL as fallback');
+
+  // Parse the Redis URL (redis://default:password@host:port or rediss://)
+  const url = new URL(redisUrl);
+  const password = url.password || url.username;
+  const host = url.hostname;
+
+  // For Upstash Redis, the REST API URL needs the full path
   const restUrl = `https://${host}`;
+
+  console.log('[Redis] Constructed REST URL:', restUrl.substring(0, 30) + '...');
 
   return {
     url: restUrl,
@@ -26,8 +35,15 @@ function getRedisConfig() {
   };
 }
 
-const redisConfig = getRedisConfig();
-const redis = new Redis(redisConfig);
+let redis;
+try {
+  const redisConfig = getRedisConfig();
+  redis = new Redis(redisConfig);
+  console.log('[Redis] Client initialized successfully');
+} catch (error) {
+  console.error('[Redis] Failed to initialize client:', error.message);
+  throw error;
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
