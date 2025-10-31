@@ -552,3 +552,32 @@ tbody tr:hover {
 .modal.active .modal-content {
     animation: fadeIn 0.3s ease;
 }
+
+/* Footer */
+.app-footer {
+    background: linear-gradient(to right, var(--dark-blue), var(--primary-blue));
+    color: var(--white);
+    padding: 1.5rem 2rem;
+    margin-top: 4rem;
+    text-align: center;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.footer-divider {
+    opacity: 0.5;
+}
+
+#buildInfo {
+    font-family: 'Courier New', monospace;
+    opacity: 0.8;
+    font-size: 0.85rem;
+}

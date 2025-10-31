@@ -181,13 +181,24 @@
                     <div class="admin-buttons">
                         <button id="exportDataBtn" class="btn btn-secondary">Export Data</button>
                         <button id="importDataBtn" class="btn btn-secondary">Import Data</button>
+                        <button id="resetStatsBtn" class="btn btn-warning">Reset Statistics</button>
                         <button id="resetDataBtn" class="btn btn-danger">Reset All Data</button>
                     </div>
                     <input type="file" id="importFileInput" style="display: none;" accept=".json">
+                    <p class="help-text">Reset Statistics: Clears play counts, skips, and reroll counter (keeps games & players)</p>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-content">
+            <span>Board Game Wheel Spinner</span>
+            <span class="footer-divider">•</span>
+            <span id="buildInfo">Loading...</span>
+        </div>
+    </footer>
 
     <script src="app.js"></script>
 </body>

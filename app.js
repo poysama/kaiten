@@ -27,6 +27,32 @@ class BoardGameSpinner {
         // Initial render
         this.updateUI();
         this.drawWheel();
+
+        // Display build info
+        this.displayBuildInfo();
+    }
+
+    displayBuildInfo() {
+        // Get build info from GitHub API
+        const buildInfoElement = document.getElementById('buildInfo');
+
+        // Try to get the current commit info
+        fetch('https://api.github.com/repos/poysama/kaiten/commits?per_page=1')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const commit = data[0];
+                    const shortSha = commit.sha.substring(0, 7);
+                    const date = new Date(commit.commit.author.date).toLocaleDateString();
+                    buildInfoElement.textContent = `v${date} • ${shortSha}`;
+                } else {
+                    buildInfoElement.textContent = 'Build: Unknown';
+                }
+            })
+            .catch(() => {
+                // Fallback if API fails
+                buildInfoElement.textContent = `Build: ${new Date().toISOString().split('T')[0]}`;
+            });
     }
 
     // ================== DATA MANAGEMENT ==================
@@ -366,21 +392,44 @@ class BoardGameSpinner {
         imageElement.innerHTML = '';
 
         try {
-            // Fetch from BGG API using CORS proxy
-            const corsProxy = 'https://api.allorigins.win/raw?url=';
-            const bggUrl = encodeURIComponent(`https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&type=boardgame`);
-            const response = await fetch(`${corsProxy}${bggUrl}`);
-            const text = await response.text();
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(text, 'text/xml');
+            // Try multiple CORS proxies in order
+            const proxies = [
+                'https://corsproxy.io/?',
+                'https://api.codetabs.com/v1/proxy?quest=',
+                'https://cors-anywhere.herokuapp.com/'
+            ];
 
-            const imageNode = xmlDoc.querySelector('image');
-            if (imageNode) {
-                const imageUrl = imageNode.textContent;
+            const bggUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&type=boardgame`;
+            let imageUrl = null;
+
+            // Try each proxy until one works
+            for (const proxy of proxies) {
+                try {
+                    const response = await fetch(`${proxy}${encodeURIComponent(bggUrl)}`);
+                    if (!response.ok) continue;
+
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(text, 'text/xml');
+
+                    const imageNode = xmlDoc.querySelector('image');
+                    if (imageNode && imageNode.textContent) {
+                        imageUrl = imageNode.textContent;
+                        break;
+                    }
+                } catch (proxyError) {
+                    console.log(`Proxy ${proxy} failed, trying next...`);
+                    continue;
+                }
+            }
+
+            if (imageUrl) {
                 this.bggImageCache[game.bggId] = imageUrl;
                 imageElement.innerHTML = `<img src="${imageUrl}" alt="${game.name}" crossorigin="anonymous">`;
             } else {
-                imageElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
+                // Fallback: Use BGG's direct image URL pattern
+                const fallbackUrl = `https://cf.geekdo-images.com/original/img/boardgame-${game.bggId}.jpg`;
+                imageElement.innerHTML = `<img src="${fallbackUrl}" alt="${game.name}" onerror="this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; height: 100%; color: #666;\\'>Image unavailable</div>'" crossorigin="anonymous">`;
             }
         } catch (error) {
             console.error('Error loading BGG image:', error);
@@ -399,7 +448,19 @@ class BoardGameSpinner {
         try {
             const [owner, repo] = githubRepo.split('/');
             const path = 'spinner-data.json';
-            const content = btoa(JSON.stringify(this.data, null, 2));
+
+            // Create a copy of data without sensitive information
+            const dataToSync = {
+                ...this.data,
+                session: {
+                    code: this.data.session.code,
+                    // DO NOT include githubToken or githubRepo in synced data
+                    githubToken: '',
+                    githubRepo: ''
+                }
+            };
+
+            const content = btoa(JSON.stringify(dataToSync, null, 2));
 
             // Check if file exists
             let sha = null;
@@ -473,7 +534,13 @@ class BoardGameSpinner {
             if (response.ok) {
                 const data = await response.json();
                 const content = atob(data.content);
-                this.data = JSON.parse(content);
+                const loadedData = JSON.parse(content);
+
+                // Preserve local GitHub credentials
+                loadedData.session.githubToken = githubToken;
+                loadedData.session.githubRepo = githubRepo;
+
+                this.data = loadedData;
                 this.saveToLocalStorage();
                 this.updateUI();
                 this.drawWheel();
@@ -598,6 +665,32 @@ class BoardGameSpinner {
             }
         };
         reader.readAsText(file);
+    }
+
+    resetStats() {
+        if (!confirm('Reset all statistics? This will clear play counts, skips, and reroll counter. Games and players will be kept.')) {
+            return;
+        }
+
+        // Reset all stats
+        this.data.stats = {
+            gamesPlayed: {},
+            gamesSkipped: {},
+            lastPlayed: {},
+            rerollsToday: 0,
+            lastRerollDate: null
+        };
+
+        // Initialize stats for existing games
+        this.data.games.forEach(game => {
+            this.data.stats.gamesPlayed[game.id] = 0;
+            this.data.stats.gamesSkipped[game.id] = 0;
+        });
+
+        this.saveToLocalStorage();
+        this.syncWithGitHub();
+        this.updateUI();
+        alert('Statistics have been reset!');
     }
 
     resetData() {
@@ -857,6 +950,7 @@ class BoardGameSpinner {
             }
         });
 
+        document.getElementById('resetStatsBtn').addEventListener('click', () => this.resetStats());
         document.getElementById('resetDataBtn').addEventListener('click', () => this.resetData());
     }
 
