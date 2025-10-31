@@ -1,3 +1,4 @@
+
 import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || "replace_secret";
 const ADMIN_USER = process.env.ADMIN_USER || "admin";

@@ -1,3 +1,4 @@
+
 import { getRedis } from "./redis.js";
 
 export default async function (req, res){
@@ -17,7 +18,7 @@ export default async function (req, res){
     return { id, name: g.name, played: parseInt(s.played||0), skipped: parseInt(s.skipped||0), picks: parseInt(s.picks||0) };
   });
   detailed.sort((a,b)=> b.played - a.played);
-  const mostPlayed = detailed.slice(0,10);
-  const neverPlayed = detailed.filter(d=> d.played===0).slice(0,10);
+  const mostPlayed = detailed.slice(0,100);
+  const neverPlayed = detailed.filter(d=> d.played===0).slice(0,100);
   return res.json({ mostPlayed, neverPlayed });
 }
