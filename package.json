@@ -4,7 +4,7 @@
   "description": "Board Game Wheel Spinner with Vercel + Redis",
   "type": "module",
   "dependencies": {
-    "@vercel/kv": "^1.0.1"
+    "@upstash/redis": "^1.28.0"
   },
   "engines": {
     "node": ">=18.0.0"

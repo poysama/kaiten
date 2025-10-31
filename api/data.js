@@ -1,4 +1,7 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis client with REDIS_URL
+const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -15,14 +18,14 @@ export default async function handler(req, res) {
     console.log(`[API] ${req.method} request received`);
 
     if (req.method === 'GET') {
-      console.log('[API] Attempting to read from KV...');
+      console.log('[API] Attempting to read from Redis...');
 
       // Load data from Redis
-      const data = await kv.get('spinner-data');
+      const rawData = await redis.get('spinner-data');
 
-      console.log('[API] KV read result:', data ? 'Data found' : 'No data found');
+      console.log('[API] Redis read result:', rawData ? 'Data found' : 'No data found');
 
-      if (!data) {
+      if (!rawData) {
         // Return default data if nothing stored yet
         console.log('[API] Returning default data structure');
         return res.status(200).json({
@@ -37,6 +40,9 @@ export default async function handler(req, res) {
           }
         });
       }
+
+      // Parse the JSON data
+      const data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
 
       console.log('[API] Returning stored data');
       return res.status(200).json(data);
@@ -54,14 +60,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid data structure' });
       }
 
-      console.log('[API] Data validation passed, saving to KV...');
+      console.log('[API] Data validation passed, saving to Redis...');
       console.log('[API] Games count:', data.games.length);
       console.log('[API] Players count:', data.players.length);
 
       // Store in Redis
-      await kv.set('spinner-data', data);
+      await redis.set('spinner-data', JSON.stringify(data));
 
-      console.log('[API] Data saved successfully to KV');
+      console.log('[API] Data saved successfully to Redis');
       return res.status(200).json({ success: true, message: 'Data saved successfully' });
     }
 

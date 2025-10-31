@@ -1,37 +1,42 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    // Test KV connection
+    // Test Redis connection
     const testKey = 'health-check-' + Date.now();
-    const testValue = { test: true, timestamp: new Date().toISOString() };
+    const testValue = JSON.stringify({ test: true, timestamp: new Date().toISOString() });
 
     // Try to write
-    await kv.set(testKey, testValue, { ex: 60 }); // Expires in 60 seconds
+    await redis.set(testKey, testValue, { ex: 60 }); // Expires in 60 seconds
 
     // Try to read
-    const readValue = await kv.get(testKey);
+    const readValue = await redis.get(testKey);
 
     // Check environment variables
-    const hasKvUrl = !!process.env.KV_REST_API_URL;
-    const hasKvToken = !!process.env.KV_REST_API_TOKEN;
+    const hasRedisUrl = !!process.env.REDIS_URL;
+    const hasUpstashUrl = !!process.env.UPSTASH_REDIS_REST_URL;
+    const hasUpstashToken = !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
     // Get existing data
-    const existingData = await kv.get('spinner-data');
+    const existingDataRaw = await redis.get('spinner-data');
+    const existingData = existingDataRaw ? (typeof existingDataRaw === 'string' ? JSON.parse(existingDataRaw) : existingDataRaw) : null;
 
     return res.status(200).json({
       status: 'ok',
-      kv_connected: true,
+      redis_connected: true,
       environment_vars: {
-        KV_REST_API_URL: hasKvUrl ? 'Set' : 'Missing',
-        KV_REST_API_TOKEN: hasKvToken ? 'Set' : 'Missing'
+        REDIS_URL: hasRedisUrl ? 'Set' : 'Missing',
+        UPSTASH_REDIS_REST_URL: hasUpstashUrl ? 'Set' : 'Missing',
+        UPSTASH_REDIS_REST_TOKEN: hasUpstashToken ? 'Set' : 'Missing'
       },
       test: {
         write: 'success',
         read: readValue ? 'success' : 'failed',
-        match: JSON.stringify(readValue) === JSON.stringify(testValue)
+        match: readValue === testValue
       },
       existing_data: {
         exists: !!existingData,
@@ -43,12 +48,13 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({
       status: 'error',
-      kv_connected: false,
+      redis_connected: false,
       error: error.message,
       stack: error.stack,
       environment_vars: {
-        KV_REST_API_URL: !!process.env.KV_REST_API_URL ? 'Set' : 'Missing',
-        KV_REST_API_TOKEN: !!process.env.KV_REST_API_TOKEN ? 'Set' : 'Missing'
+        REDIS_URL: !!process.env.REDIS_URL ? 'Set' : 'Missing',
+        UPSTASH_REDIS_REST_URL: !!process.env.UPSTASH_REDIS_REST_URL ? 'Set' : 'Missing',
+        UPSTASH_REDIS_REST_TOKEN: !!process.env.UPSTASH_REDIS_REST_TOKEN ? 'Set' : 'Missing'
       }
     });
   }
