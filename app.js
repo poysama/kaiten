@@ -475,8 +475,15 @@ class BoardGameSpinner {
                 this.updateUI();
                 this.drawWheel();
                 alert('Data loaded from GitHub successfully!');
+            } else if (response.status === 404) {
+                // File doesn't exist yet, create it with current data
+                alert('File not found on GitHub. Creating it with your current data...');
+                await this.syncWithGitHub();
+                alert('Data synced to GitHub successfully! File created.');
             } else {
-                alert('Failed to load from GitHub. Make sure the file exists.');
+                const errorText = await response.text();
+                alert(`Failed to load from GitHub: ${response.status} ${response.statusText}`);
+                console.error('GitHub error:', errorText);
             }
         } catch (error) {
             console.error('Error loading from GitHub:', error);
