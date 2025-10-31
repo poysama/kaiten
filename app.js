@@ -9,7 +9,6 @@ class BoardGameSpinner {
         this.spinning = false;
         this.currentRotation = 0;
         this.selectedGame = null;
-        this.bggImageCache = {};
 
         this.init();
     }
@@ -297,16 +296,12 @@ class BoardGameSpinner {
 
     // ================== RESULT MODAL ==================
 
-    async showResultModal() {
+    showResultModal() {
         const modal = document.getElementById('resultModal');
         const gameName = document.getElementById('resultGameName');
-        const gameImage = document.getElementById('gameImage');
         const rerollBtn = document.getElementById('rerollBtn');
 
         gameName.textContent = this.selectedGame.name;
-
-        // Load game image from BoardGameGeek
-        await this.loadBGGImage(this.selectedGame, gameImage);
 
         // Check reroll limit
         const rerollLimit = this.getRerollLimit();
@@ -372,71 +367,6 @@ class BoardGameSpinner {
 
         // Spin again
         setTimeout(() => this.spinWheel(), 300);
-    }
-
-    // ================== BOARDGAMEGEEK API ==================
-
-    async loadBGGImage(game, imageElement) {
-        if (!game.bggId) {
-            imageElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">No image available</div>';
-            return;
-        }
-
-        // Check cache
-        if (this.bggImageCache[game.bggId]) {
-            imageElement.innerHTML = `<img src="${this.bggImageCache[game.bggId]}" alt="${game.name}">`;
-            return;
-        }
-
-        imageElement.classList.add('loading');
-        imageElement.innerHTML = '';
-
-        try {
-            // Try multiple CORS proxies in order
-            const proxies = [
-                'https://corsproxy.io/?',
-                'https://api.codetabs.com/v1/proxy?quest=',
-                'https://cors-anywhere.herokuapp.com/'
-            ];
-
-            const bggUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&type=boardgame`;
-            let imageUrl = null;
-
-            // Try each proxy until one works
-            for (const proxy of proxies) {
-                try {
-                    const response = await fetch(`${proxy}${encodeURIComponent(bggUrl)}`);
-                    if (!response.ok) continue;
-
-                    const text = await response.text();
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(text, 'text/xml');
-
-                    const imageNode = xmlDoc.querySelector('image');
-                    if (imageNode && imageNode.textContent) {
-                        imageUrl = imageNode.textContent;
-                        break;
-                    }
-                } catch (proxyError) {
-                    console.log(`Proxy ${proxy} failed, trying next...`);
-                    continue;
-                }
-            }
-
-            if (imageUrl) {
-                this.bggImageCache[game.bggId] = imageUrl;
-                imageElement.innerHTML = `<img src="${imageUrl}" alt="${game.name}" crossorigin="anonymous">`;
-            } else {
-                // Fallback: Use BGG's direct image URL pattern
-                const fallbackUrl = `https://cf.geekdo-images.com/original/img/boardgame-${game.bggId}.jpg`;
-                imageElement.innerHTML = `<img src="${fallbackUrl}" alt="${game.name}" onerror="this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; height: 100%; color: #666;\\'>Image unavailable</div>'" crossorigin="anonymous">`;
-            }
-        } catch (error) {
-            console.error('Error loading BGG image:', error);
-            imageElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Failed to load image</div>';
-        } finally {
-            imageElement.classList.remove('loading');
-        }
     }
 
     // ================== GITHUB API ==================
@@ -577,13 +507,12 @@ class BoardGameSpinner {
         this.updateUI();
     }
 
-    addGame(name, bggId) {
+    addGame(name) {
         if (!name || name.trim() === '') return;
 
         const game = {
             id: this.generateId(name),
-            name: name.trim(),
-            bggId: bggId ? bggId.trim() : ''
+            name: name.trim()
         };
 
         this.data.games.push(game);
@@ -846,7 +775,6 @@ class BoardGameSpinner {
                 li.className = 'admin-list-item';
                 li.innerHTML = `
                     <span class="item-name">${game.name}</span>
-                    <span class="item-id">BGG: ${game.bggId || 'N/A'}</span>
                     <button class="btn-delete" onclick="app.removeGame('${game.id}')">Remove</button>
                 `;
                 gamesList.appendChild(li);
@@ -898,19 +826,15 @@ class BoardGameSpinner {
         // Admin - Games
         document.getElementById('addGameBtn').addEventListener('click', () => {
             const nameInput = document.getElementById('newGameName');
-            const bggInput = document.getElementById('newGameBGG');
-            this.addGame(nameInput.value, bggInput.value);
+            this.addGame(nameInput.value);
             nameInput.value = '';
-            bggInput.value = '';
         });
 
         document.getElementById('newGameName').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const nameInput = document.getElementById('newGameName');
-                const bggInput = document.getElementById('newGameBGG');
-                this.addGame(nameInput.value, bggInput.value);
+                this.addGame(nameInput.value);
                 nameInput.value = '';
-                bggInput.value = '';
             }
         });
 

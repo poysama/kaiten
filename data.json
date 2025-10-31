@@ -2,53 +2,43 @@
   "games": [
     {
       "id": "forest-shuffle",
-      "name": "Forest Shuffle",
-      "bggId": "391163"
+      "name": "Forest Shuffle"
     },
     {
       "id": "forest-shuffle-dartmoor",
-      "name": "Forest Shuffle Dartmoor",
-      "bggId": "391163"
+      "name": "Forest Shuffle Dartmoor"
     },
     {
       "id": "its-a-wonderful-world",
-      "name": "It's a Wonderful World",
-      "bggId": "271324"
+      "name": "It's a Wonderful World"
     },
     {
       "id": "7-wonders",
-      "name": "7 Wonders",
-      "bggId": "68448"
+      "name": "7 Wonders"
     },
     {
       "id": "cant-stop",
-      "name": "Can't Stop",
-      "bggId": "41"
+      "name": "Can't Stop"
     },
     {
       "id": "lost-ruins-of-arnak",
-      "name": "Lost Ruins of Arnak",
-      "bggId": "312484"
+      "name": "Lost Ruins of Arnak"
     },
     {
       "id": "terra-mystica",
-      "name": "Terra Mystica",
-      "bggId": "120677"
+      "name": "Terra Mystica"
     },
     {
       "id": "clans-of-caledonia",
-      "name": "Clans of Caledonia",
-      "bggId": "216132"
+      "name": "Clans of Caledonia"
     },
     {
       "id": "castle-combo",
-      "name": "Castle Combo",
-      "bggId": "366697"
+      "name": "Castle Combo"
     },
     {
       "id": "the-guilds-of-merchants-and-explorers",
-      "name": "The Guilds of Merchants and Explorers",
-      "bggId": "350933"
+      "name": "The Guilds of Merchants and Explorers"
     }
   ],
   "players": [],
