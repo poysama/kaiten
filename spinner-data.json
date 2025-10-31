@@ -49,7 +49,7 @@
       "its-a-wonderful-world": 0,
       "7-wonders": 0,
       "cant-stop": 0,
-      "lost-ruins-of-arnak": 1,
+      "lost-ruins-of-arnak": 0,
       "terra-mystica": 0,
       "clans-of-caledonia": 0,
       "castle-combo": 0,
@@ -67,11 +67,9 @@
       "castle-combo": 0,
       "the-guilds-of-merchants-and-explorers": 0
     },
-    "lastPlayed": {
-      "lost-ruins-of-arnak": "2025-10-31T12:05:14.481Z"
-    },
+    "lastPlayed": {},
     "rerollsToday": 0,
-    "lastRerollDate": "Fri Oct 31 2025"
+    "lastRerollDate": null
   },
   "session": {
     "code": "",
