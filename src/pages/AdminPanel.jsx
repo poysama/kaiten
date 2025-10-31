@@ -1,91 +1,79 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
-export default function AdminPanel() {
-  const [gamesText, setGamesText] = useState('')
-  const [status, setStatus] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+export default function AdminPage() {
+  const [games, setGames] = useState([])
+  const [batchInput, setBatchInput] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleAddGames = async () => {
-    const games = gamesText
-      .split('\n')
-      .map(g => g.trim())
-      .filter(g => g.length > 0)
+  const fetchGames = async () => {
+    const res = await fetch('/api/games')
+    const data = await res.json()
+    setGames(data)
+  }
 
-    if (games.length === 0) {
-      setStatus('⚠️ Please enter at least one game name.')
-      return
-    }
+  useEffect(() => {
+    fetchGames()
+  }, [])
 
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/admin/games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ games }),
-      })
-      if (res.ok) {
-        setStatus(`✅ Added ${games.length} game${games.length > 1 ? 's' : ''}!`)
-        setGamesText('')
-      } else {
-        setStatus('❌ Failed to add games.')
-      }
-    } catch (err) {
-      console.error(err)
-      setStatus('❌ Server error.')
-    } finally {
-      setIsLoading(false)
-    }
+  const handleBatchAdd = async () => {
+    const lines = batchInput.split('\n').map(l => l.trim()).filter(l => l)
+    if (lines.length === 0) return alert('No valid game names found.')
+
+    setLoading(true)
+    await fetch('/api/games/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ games: lines })
+    })
+    setBatchInput('')
+    await fetchGames()
+    setLoading(false)
   }
 
   const handleResetStats = async () => {
-    if (!confirm('Are you sure you want to reset all stats?')) return
-    setIsLoading(true)
-    try {
-      const res = await fetch('/api/admin/reset', { method: 'POST' })
-      if (res.ok) setStatus('✅ Stats reset successfully!')
-      else setStatus('❌ Failed to reset stats.')
-    } catch (err) {
-      console.error(err)
-      setStatus('❌ Server error.')
-    } finally {
-      setIsLoading(false)
-    }
+    if (!confirm('Reset all stats to zero?')) return
+    await fetch('/api/stats/reset', { method: 'POST' })
+    alert('All stats reset!')
   }
 
   return (
-    <div className="admin-panel max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4">Admin Panel</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
 
-      <div className="mb-4">
-        <label className="block mb-2 font-semibold">
-          Add Games (one per line)
-        </label>
+      <div>
+        <label className="block mb-2 font-semibold">Batch Add Games (one per line)</label>
         <textarea
-          className="w-full p-3 border rounded-md h-48"
-          value={gamesText}
-          onChange={e => setGamesText(e.target.value)}
-          placeholder="Example:\nCatan\nWingspan\nTerraforming Mars"
-        ></textarea>
+          className="w-full h-40 border p-2 rounded"
+          placeholder="Enter game names here, one per line..."
+          value={batchInput}
+          onChange={e => setBatchInput(e.target.value)}
+        />
+        <button
+          onClick={handleBatchAdd}
+          disabled={loading}
+          className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          {loading ? 'Adding...' : 'Add Games'}
+        </button>
       </div>
 
-      <div className="flex gap-4">
-        <button
-          onClick={handleAddGames}
-          disabled={isLoading}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-        >
-          {isLoading ? 'Adding...' : 'Add Games'}
-        </button>
+      <div>
         <button
           onClick={handleResetStats}
-          disabled={isLoading}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
           Reset Stats
         </button>
       </div>
 
-      {status && <p className="mt-4 text-lg">{status}</p>}
+      <div>
+        <h3 className="font-semibold mt-6 mb-2">Current Games ({games.length})</h3>
+        <ul className="list-disc pl-6">
+          {games.map((g, i) => (
+            <li key={i}>{g}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
