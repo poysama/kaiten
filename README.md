@@ -73,18 +73,38 @@ The app uses a three-tier storage approach:
 
 #### Setting Up GitHub Sync
 
+**Option 1: Classic Personal Access Token (Recommended for simplicity)**
+
 1. Create a GitHub Personal Access Token:
-   - Go to GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
+   - Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens)
    - Click "Generate new token (classic)"
-   - Select scope: `repo` (for private repos) or `public_repo` (for public repos)
-   - Copy the token
+   - Give it a descriptive name (e.g., "Board Game Spinner")
+   - Set expiration (recommend 90 days or No expiration for convenience)
+   - **Required Permissions:**
+     - ✅ **`repo`** - Full control of private repositories (if your repo is private)
+     - OR ✅ **`public_repo`** - Access to public repositories only (if your repo is public)
+   - Click "Generate token" and **copy it immediately** (you won't see it again!)
+
+**Option 2: Fine-grained Personal Access Token (More secure)**
+
+1. Create a fine-grained token:
+   - Go to [GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens](https://github.com/settings/tokens?type=beta)
+   - Click "Generate new token"
+   - Give it a descriptive name
+   - Select "Only select repositories" and choose your kaiten repository
+   - **Required Repository Permissions:**
+     - ✅ **Contents: Read and write** - To create/update spinner-data.json
+   - Click "Generate token" and **copy it immediately**
 
 2. In the Admin panel:
    - Paste your token in "GitHub Personal Access Token"
-   - Enter your repository as `username/repository-name`
+   - Enter your repository as `username/repository-name` (e.g., `poysama/kaiten`)
    - Click "Save Settings"
 
-3. Data will automatically sync to `spinner-data.json` in your repository
+3. Data will automatically sync to `spinner-data.json` in your repository whenever you:
+   - Confirm or skip a game
+   - Add/remove games or players
+   - Click the sync button manually
 
 #### Using Session Codes
 
@@ -181,15 +201,27 @@ const colors = ['#2175d9', '#4a9eff', '#174d8a', '#5eb3ff'];
 ## Troubleshooting
 
 ### Images Not Loading
-- Check that the BoardGameGeek ID is correct
-- BGG API may be slow or temporarily unavailable
-- Images require internet connection
+- **Check BoardGameGeek ID**: Verify the BGG ID is correct for each game
+  - Find BGG IDs at boardgamegeek.com - the number in the URL (e.g., `/boardgame/68448/` = ID 68448)
+- **Internet Connection**: Images require active internet connection
+- **CORS Proxy**: The app uses a CORS proxy (allorigins.win) to fetch BGG data
+  - If allorigins.win is down, images won't load
+  - Check browser console for errors
+- **BGG API Rate Limits**: BoardGameGeek may rate-limit requests
+  - Wait a few minutes and try again
+  - Images are cached once loaded successfully
 
 ### GitHub Sync Not Working
-- Verify token has correct permissions
-- Check repository name format: `username/repo`
-- Ensure repository exists and token has access
-- Check browser console for error messages
+- **Token Permissions**: Verify your token has the correct permissions
+  - **Classic Token**: Needs `repo` (private) or `public_repo` (public)
+  - **Fine-grained Token**: Needs `Contents: Read and write` permission
+- **Repository Format**: Must be exactly `username/repository-name`
+  - Example: `poysama/kaiten` (NOT `github.com/poysama/kaiten`)
+- **Repository Access**: Ensure the token has access to the specified repository
+  - For fine-grained tokens, check it's added to "Repository access"
+- **File Permissions**: The app creates `spinner-data.json` in the root of your repo
+  - Check if the file was created after first sync
+- **Console Errors**: Open browser DevTools (F12) and check Console tab for error details
 
 ### Data Lost
 - Export data regularly as backup

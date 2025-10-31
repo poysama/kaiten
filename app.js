@@ -366,8 +366,10 @@ class BoardGameSpinner {
         imageElement.innerHTML = '';
 
         try {
-            // Fetch from BGG API
-            const response = await fetch(`https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&type=boardgame`);
+            // Fetch from BGG API using CORS proxy
+            const corsProxy = 'https://api.allorigins.win/raw?url=';
+            const bggUrl = encodeURIComponent(`https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&type=boardgame`);
+            const response = await fetch(`${corsProxy}${bggUrl}`);
             const text = await response.text();
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, 'text/xml');
@@ -376,7 +378,7 @@ class BoardGameSpinner {
             if (imageNode) {
                 const imageUrl = imageNode.textContent;
                 this.bggImageCache[game.bggId] = imageUrl;
-                imageElement.innerHTML = `<img src="${imageUrl}" alt="${game.name}">`;
+                imageElement.innerHTML = `<img src="${imageUrl}" alt="${game.name}" crossorigin="anonymous">`;
             } else {
                 imageElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">Image not found</div>';
             }
