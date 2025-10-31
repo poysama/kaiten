@@ -1,4 +1,5 @@
-# Board Game Spinner (Vite + React) - Vercel-ready
+
+# Board Game Spinner v2 (Vite + React) - Vercel-ready
 
 ## What is included
 - Vite + React frontend (src/)
@@ -17,6 +18,8 @@
   - `POST /api/admin/games` - create game (requires Authorization Bearer token)
   - `POST /api/admin/login` - login to get token
   - `GET /api/health` - test Redis connection
+  - `POST /api/reset-stats` - reset all stats to zero (admin only)
+  - `GET /api/seed-sample` - seed sample games if empty
 
 ## Deploy to Vercel (using Vercel UI)
 1. Push this repo to GitHub.
@@ -24,7 +27,7 @@
 3. Set environment variables in Vercel:
    - `REDIS_URL` (your Redis connection URL)
    - `ADMIN_USER`, `ADMIN_PASS`, `ADMIN_JWT_SECRET`
-4. Deploy. Vercel will install dependencies and build automatically.
+4. (Optional) Call `/api/seed-sample` once to populate initial games.
+5. Deploy. Vercel will install dependencies and build automatically.
 
-## Note on Redis size
-30MB should be enough for small datasets (hundreds of games). If you plan to store large histories or images, consider a larger plan.
+Footer displays: `Board Game Wheel Spinner • v10/31/2025 • a0cdab6`
