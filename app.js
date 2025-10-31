@@ -29,6 +29,11 @@ class BoardGameSpinner {
 
         // Display build info
         this.displayBuildInfo();
+
+        // Load latest data from server (non-blocking)
+        this.loadFromServer().catch(err => {
+            console.log('Could not load from server on init:', err);
+        });
     }
 
     displayBuildInfo() {
@@ -101,9 +106,7 @@ class BoardGameSpinner {
                 lastRerollDate: null
             },
             session: {
-                code: '',
-                githubToken: '',
-                githubRepo: ''
+                code: ''
             }
         };
     }
@@ -335,7 +338,7 @@ class BoardGameSpinner {
         this.data.stats.lastPlayed[this.selectedGame.id] = new Date().toISOString();
 
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.hideResultModal();
         this.updateUI();
     }
@@ -348,7 +351,7 @@ class BoardGameSpinner {
             (this.data.stats.gamesSkipped[this.selectedGame.id] || 0) + 1;
 
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.hideResultModal();
         this.updateUI();
     }
@@ -369,125 +372,69 @@ class BoardGameSpinner {
         setTimeout(() => this.spinWheel(), 300);
     }
 
-    // ================== GITHUB API ==================
+    // ================== SERVER API ==================
 
-    async syncWithGitHub() {
-        const { githubToken, githubRepo } = this.data.session;
-        if (!githubToken || !githubRepo) return;
-
+    async saveToServer() {
         try {
-            const [owner, repo] = githubRepo.split('/');
-            const path = 'spinner-data.json';
-
-            // Create a copy of data without sensitive information
-            const dataToSync = {
-                ...this.data,
-                session: {
-                    code: this.data.session.code,
-                    // DO NOT include githubToken or githubRepo in synced data
-                    githubToken: '',
-                    githubRepo: ''
-                }
+            // Prepare data to save (without session info)
+            const dataToSave = {
+                games: this.data.games,
+                players: this.data.players,
+                stats: this.data.stats
             };
 
-            const content = btoa(JSON.stringify(dataToSync, null, 2));
-
-            // Check if file exists
-            let sha = null;
-            try {
-                const getResponse = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-                    {
-                        headers: {
-                            'Authorization': `token ${githubToken}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-                if (getResponse.ok) {
-                    const data = await getResponse.json();
-                    sha = data.sha;
-                }
-            } catch (e) {
-                // File doesn't exist yet
-            }
-
-            // Create or update file
-            const response = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${githubToken}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: 'Update spinner data',
-                        content: content,
-                        ...(sha && { sha })
-                    })
-                }
-            );
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSave)
+            });
 
             if (response.ok) {
-                console.log('Synced with GitHub successfully');
+                console.log('Data synced to server successfully');
+                return true;
             } else {
-                console.error('GitHub sync failed:', await response.text());
+                const error = await response.json();
+                console.error('Server sync failed:', error);
+                return false;
             }
         } catch (error) {
-            console.error('Error syncing with GitHub:', error);
+            console.error('Error syncing to server:', error);
+            return false;
         }
     }
 
-    async loadFromGitHub() {
-        const { githubToken, githubRepo } = this.data.session;
-        if (!githubToken || !githubRepo) {
-            alert('Please configure GitHub settings first');
-            return;
-        }
-
+    async loadFromServer() {
         try {
-            const [owner, repo] = githubRepo.split('/');
-            const path = 'spinner-data.json';
-
-            const response = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-                {
-                    headers: {
-                        'Authorization': `token ${githubToken}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                }
-            );
+            const response = await fetch('/api/data');
 
             if (response.ok) {
-                const data = await response.json();
-                const content = atob(data.content);
-                const loadedData = JSON.parse(content);
+                const serverData = await response.json();
 
-                // Preserve local GitHub credentials
-                loadedData.session.githubToken = githubToken;
-                loadedData.session.githubRepo = githubRepo;
+                // Merge server data with local data
+                this.data.games = serverData.games || [];
+                this.data.players = serverData.players || [];
+                this.data.stats = serverData.stats || {
+                    gamesPlayed: {},
+                    gamesSkipped: {},
+                    lastPlayed: {},
+                    rerollsToday: 0,
+                    lastRerollDate: null
+                };
 
-                this.data = loadedData;
                 this.saveToLocalStorage();
                 this.updateUI();
                 this.drawWheel();
-                alert('Data loaded from GitHub successfully!');
-            } else if (response.status === 404) {
-                // File doesn't exist yet, create it with current data
-                alert('File not found on GitHub. Creating it with your current data...');
-                await this.syncWithGitHub();
-                alert('Data synced to GitHub successfully! File created.');
+                console.log('Data loaded from server successfully');
+                return true;
             } else {
-                const errorText = await response.text();
-                alert(`Failed to load from GitHub: ${response.status} ${response.statusText}`);
-                console.error('GitHub error:', errorText);
+                console.error('Failed to load from server');
+                return false;
             }
         } catch (error) {
-            console.error('Error loading from GitHub:', error);
-            alert('Error loading from GitHub. Check console for details.');
+            console.error('Error loading from server:', error);
+            return false;
         }
     }
 
@@ -503,14 +450,14 @@ class BoardGameSpinner {
 
         this.data.players.push(player);
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
     }
 
     removePlayer(id) {
         this.data.players = this.data.players.filter(p => p.id !== id);
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
     }
 
@@ -529,7 +476,7 @@ class BoardGameSpinner {
         this.data.stats.gamesSkipped[game.id] = 0;
 
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
         this.drawWheel();
     }
@@ -543,7 +490,7 @@ class BoardGameSpinner {
         delete this.data.stats.lastPlayed[id];
 
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
         this.drawWheel();
     }
@@ -555,13 +502,6 @@ class BoardGameSpinner {
             '-' + Date.now();
     }
 
-    saveGitHubSettings(token, repo) {
-        this.data.session.githubToken = token;
-        this.data.session.githubRepo = repo;
-        this.saveToLocalStorage();
-        alert('GitHub settings saved!');
-    }
-
     createSession(code) {
         if (!code || code.trim() === '') {
             alert('Please enter a session code');
@@ -570,7 +510,7 @@ class BoardGameSpinner {
 
         this.data.session.code = code.trim();
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
         alert(`Session "${code}" created!`);
     }
@@ -624,7 +564,7 @@ class BoardGameSpinner {
         });
 
         this.saveToLocalStorage();
-        this.syncWithGitHub();
+        this.saveToServer();
         this.updateUI();
         alert('Statistics have been reset!');
     }
@@ -787,11 +727,6 @@ class BoardGameSpinner {
                 gamesList.appendChild(li);
             });
         }
-
-        // Restore GitHub settings (if any)
-        if (this.data.session.githubRepo) {
-            document.getElementById('githubRepo').value = this.data.session.githubRepo;
-        }
     }
 
     // ================== EVENT LISTENERS ==================
@@ -813,7 +748,14 @@ class BoardGameSpinner {
         document.getElementById('rerollBtn').addEventListener('click', () => this.rerollGame());
 
         // Sync button
-        document.getElementById('syncBtn').addEventListener('click', () => this.loadFromGitHub());
+        document.getElementById('syncBtn').addEventListener('click', async () => {
+            const success = await this.loadFromServer();
+            if (success) {
+                alert('Data loaded from server successfully!');
+            } else {
+                alert('Failed to load data from server. Check console for details.');
+            }
+        });
 
         // Admin - Players
         document.getElementById('addPlayerBtn').addEventListener('click', () => {
@@ -852,19 +794,17 @@ class BoardGameSpinner {
             input.value = '';
         });
 
-        document.getElementById('joinSessionBtn').addEventListener('click', () => {
+        document.getElementById('joinSessionBtn').addEventListener('click', async () => {
             const input = document.getElementById('sessionCodeInput');
             this.data.session.code = input.value.trim();
             this.saveToLocalStorage();
-            this.loadFromGitHub();
+            const success = await this.loadFromServer();
+            if (success) {
+                alert('Session joined! Data loaded from server.');
+            } else {
+                alert('Failed to join session. Check console for details.');
+            }
             input.value = '';
-        });
-
-        // Admin - GitHub
-        document.getElementById('saveGithubBtn').addEventListener('click', () => {
-            const token = document.getElementById('githubToken').value;
-            const repo = document.getElementById('githubRepo').value;
-            this.saveGitHubSettings(token, repo);
         });
 
         // Admin - Data management

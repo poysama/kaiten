@@ -50,8 +50,6 @@
     "lastRerollDate": null
   },
   "session": {
-    "code": "",
-    "githubToken": "",
-    "githubRepo": ""
+    "code": ""
   }
 }

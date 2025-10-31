@@ -1,6 +1,6 @@
 # Board Game Wheel Spinner
 
-A beautiful, interactive board game selector with wheel spinner animation, statistics tracking, and multi-device collaboration support.
+A beautiful, interactive board game selector with wheel spinner animation, statistics tracking, and cloud data persistence using Vercel + Redis.
 
 ## Features
 
@@ -13,7 +13,7 @@ A beautiful, interactive board game selector with wheel spinner animation, stati
 
 ### Data Management
 - **Admin Panel**: Easy-to-use interface for managing games and players
-- **GitHub Integration**: Sync data across devices using GitHub repository
+- **Cloud Sync**: Automatic data sync to Vercel Redis backend
 - **LocalStorage**: Automatic local backup with fallback support
 - **Session Codes**: Share session codes to collaborate across devices
 - **Import/Export**: Backup and restore your data
@@ -21,27 +21,91 @@ A beautiful, interactive board game selector with wheel spinner animation, stati
 ### Design
 - **Board Game Arena Theme**: Blue, white, and orange color scheme
 - **Desktop-Focused**: Optimized for desktop browsers
-- **BoardGameGeek Images**: Automatic game image loading from BGG API
+- **Large Text Display**: Clear, bold text when selecting games
 - **Responsive Layout**: Works on various screen sizes
 
-## Quick Start
+## Quick Start - Deploy to Vercel
 
-### 1. Deploy to GitHub Pages
+### Prerequisites
+- A Vercel account (free): https://vercel.com/signup
+- Git installed on your computer
+- Node.js 18+ installed
 
-1. Fork or clone this repository
-2. Go to repository Settings > Pages
-3. Select branch `main` (or your branch) as source
-4. Save and wait for deployment
-5. Access your app at `https://yourusername.github.io/repository-name/`
+### Step 1: Install Vercel CLI
 
-### 2. First Time Setup
+```bash
+npm install -g vercel
+```
 
-1. Navigate to the **Admin** tab
+### Step 2: Deploy the App
+
+```bash
+# Navigate to your project directory
+cd kaiten
+
+# Login to Vercel
+vercel login
+
+# Deploy (follow the prompts)
+vercel
+```
+
+When prompted:
+- **Set up and deploy?** `Y`
+- **Which scope?** Select your account
+- **Link to existing project?** `N`
+- **Project name?** `board-game-spinner` (or your choice)
+- **Directory?** `./` (just press Enter)
+- **Override settings?** `N`
+
+### Step 3: Create Vercel KV (Redis) Database
+
+1. Go to your Vercel dashboard: https://vercel.com/dashboard
+2. Select your project (`board-game-spinner`)
+3. Go to the **Storage** tab
+4. Click **Create Database**
+5. Choose **KV (Redis)**
+6. Name it: `spinner-db`
+7. Click **Create**
+8. The database will be automatically linked to your project!
+
+### Step 4: Deploy with Environment Variables
+
+```bash
+# Redeploy to production with the KV database linked
+vercel --prod
+```
+
+That's it! Your app is now live with a working Redis backend! 🎉
+
+Your app will be available at: `https://your-project.vercel.app`
+
+## How It Works
+
+### Data Storage
+- **Vercel KV (Redis)**: Stores all game data, players, and statistics
+- **LocalStorage**: Browser cache for offline support and fast loading
+- **Auto-Sync**: Data automatically saves to server on every change
+
+### API Endpoints
+- `GET /api/data` - Load game data from server
+- `POST /api/data` - Save game data to server
+
+### Session Codes
+- Create a unique session code (e.g., "game-night-2024")
+- Share the code with friends
+- Everyone with the same code shares the same data!
+
+## Using the App
+
+### 1. First Time Setup
+
+1. Go to the **Admin** tab
 2. Add players (affects daily reroll limit)
-3. Games are pre-loaded, but you can add/remove them
-4. Optionally configure GitHub sync for multi-device support
+3. Add your games
+4. Start spinning!
 
-### 3. Start Spinning!
+### 2. Spinning the Wheel
 
 1. Go to the **Spinner** tab
 2. Click "Spin the Wheel!"
@@ -50,131 +114,88 @@ A beautiful, interactive board game selector with wheel spinner animation, stati
    - **Skip**: Don't play this game (counts as skipped)
    - **Reroll**: Spin again (limited by daily reroll counter)
 
-## How It Works
+### 3. Viewing Statistics
 
-### Reroll System
+Go to the **Statistics** tab to see:
+- Total games played
+- Total games skipped
+- Games never selected
+- Detailed play history for each game
+
+### 4. Leaderboards
+
+Go to the **Leaderboard** tab to see:
+- Most played games
+- Games that have never been played
+
+### 5. Admin Functions
+
+**Managing Games:**
+- Add Game: Enter name and click "Add Game"
+- Remove Game: Click the remove button
+
+**Managing Players:**
+- Add Player: Enter name and click "Add Player"
+- Remove Player: Click the remove button
+- Note: Number of players affects daily reroll limit
+
+**Session Management:**
+- **Create Session**: Enter a code and click "Create Session"
+- **Join Session**: Enter someone else's code and click "Join Session"
+- All devices with the same session code share data!
+
+**Data Management:**
+- **Export Data**: Download JSON file of all data
+- **Import Data**: Upload previously exported JSON file
+- **Reset Statistics**: Clear play counts, skips, and reroll counter (keeps games & players)
+- **Reset All Data**: Clear everything (cannot be undone!)
+
+## Reroll System
+
 - Daily reroll limit = Number of players in the system
 - Counter resets every day at midnight
 - Rerolls don't affect statistics
 
-### Statistics
-- **Games Played**: Only counts when you click "Confirm"
-- **Games Skipped**: Only counts when you click "Skip"
-- **Never Selected**: Games that have never been confirmed
-- **Last Played**: Timestamp of last confirmation
+## Development
 
-### Data Storage
+### Local Development
 
-The app uses a three-tier storage approach:
+```bash
+# Install dependencies
+npm install
 
-1. **LocalStorage** (Primary): Data stored in browser
-2. **GitHub Repository** (Sync): Optional cloud backup
-3. **Session Codes**: Share data across devices
+# Run locally with Vercel dev server
+vercel dev
+```
 
-#### Setting Up GitHub Sync
+This starts a local server at `http://localhost:3000` with hot reload and simulated Vercel KV.
 
-**Option 1: Classic Personal Access Token (Recommended for simplicity)**
+### File Structure
 
-1. Create a GitHub Personal Access Token:
-   - Go to [GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens)
-   - Click "Generate new token (classic)"
-   - Give it a descriptive name (e.g., "Board Game Spinner")
-   - Set expiration (recommend 90 days or No expiration for convenience)
-   - **Required Permissions:**
-     - ✅ **`repo`** - Full control of private repositories (if your repo is private)
-     - OR ✅ **`public_repo`** - Access to public repositories only (if your repo is public)
-   - Click "Generate token" and **copy it immediately** (you won't see it again!)
-
-**Option 2: Fine-grained Personal Access Token (More secure)**
-
-1. Create a fine-grained token:
-   - Go to [GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens](https://github.com/settings/tokens?type=beta)
-   - Click "Generate new token"
-   - Give it a descriptive name
-   - Select "Only select repositories" and choose your kaiten repository
-   - **Required Repository Permissions:**
-     - ✅ **Contents: Read and write** - To create/update spinner-data.json
-   - Click "Generate token" and **copy it immediately**
-
-2. In the Admin panel:
-   - Paste your token in "GitHub Personal Access Token"
-   - Enter your repository as `username/repository-name` (e.g., `poysama/kaiten`)
-   - Click "Save Settings"
-
-3. Data will automatically sync to `spinner-data.json` in your repository whenever you:
-   - Confirm or skip a game
-   - Add/remove games or players
-   - Click the sync button manually
-
-#### Using Session Codes
-
-Session codes allow multiple devices to share the same data:
-
-1. On the first device:
-   - Go to Admin > Session Settings
-   - Enter a session code (e.g., "game-night-2024")
-   - Click "Create Session"
-
-2. On other devices:
-   - Go to Admin > Session Settings
-   - Enter the same session code
-   - Click "Join Session"
-   - Data will sync from GitHub
-
-## Initial Games List
-
-The app comes pre-loaded with these games:
-
-- Forest Shuffle
-- Forest Shuffle Dartmoor
-- It's a Wonderful World
-- 7 Wonders
-- Can't Stop
-- Lost Ruins of Arnak
-- Terra Mystica
-- Clans of Caledonia
-- Castle Combo
-- The Guilds of Merchants and Explorers
-
-## Admin Functions
-
-### Managing Games
-- **Add Game**: Enter name and optional BoardGameGeek ID
-- **Remove Game**: Click remove button (also removes all stats for that game)
-- **BGG ID**: Used to fetch game images from BoardGameGeek
-
-### Managing Players
-- **Add Player**: Enter player name
-- **Remove Player**: Click remove button
-- **Note**: Number of players affects daily reroll limit
-
-### Data Management
-- **Export Data**: Download JSON file of all data
-- **Import Data**: Upload previously exported JSON file
-- **Reset Data**: Clear all data (cannot be undone!)
+```
+├── index.html          # Main application HTML
+├── styles.css          # Board Game Arena themed styles
+├── app.js              # Application logic
+├── data.json           # Initial data structure
+├── api/
+│   └── data.js         # Vercel serverless function for data API
+├── package.json        # Node dependencies
+├── vercel.json         # Vercel configuration
+└── README.md           # This file
+```
 
 ## Technical Details
 
 ### Stack
 - **Frontend**: Pure HTML, CSS, JavaScript (no frameworks)
-- **APIs**:
-  - GitHub REST API (data persistence)
-  - BoardGameGeek XML API2 (game images)
-- **Hosting**: GitHub Pages compatible
+- **Backend**: Vercel Serverless Functions (Node.js)
+- **Database**: Vercel KV (Redis)
+- **Hosting**: Vercel (Free tier)
 
 ### Browser Compatibility
 - Modern browsers (Chrome, Firefox, Safari, Edge)
 - LocalStorage support required
 - Canvas API support required
-
-### File Structure
-```
-├── index.html      # Main application HTML
-├── styles.css      # Board Game Arena themed styles
-├── app.js          # Application logic
-├── data.json       # Initial data structure
-└── README.md       # This file
-```
 
 ## Customization
 
@@ -192,7 +213,7 @@ Edit `styles.css` and modify the CSS variables:
 
 ### Wheel Design
 
-The wheel colors and design can be modified in `app.js` in the `drawWheel()` method:
+The wheel colors can be modified in `app.js` in the `drawWheel()` method:
 
 ```javascript
 const colors = ['#2175d9', '#4a9eff', '#174d8a', '#5eb3ff'];
@@ -200,41 +221,37 @@ const colors = ['#2175d9', '#4a9eff', '#174d8a', '#5eb3ff'];
 
 ## Troubleshooting
 
-### Images Not Loading
-- **Check BoardGameGeek ID**: Verify the BGG ID is correct for each game
-  - Find BGG IDs at boardgamegeek.com - the number in the URL (e.g., `/boardgame/68448/` = ID 68448)
-- **Internet Connection**: Images require active internet connection
-- **CORS Proxy**: The app uses a CORS proxy (allorigins.win) to fetch BGG data
-  - If allorigins.win is down, images won't load
-  - Check browser console for errors
-- **BGG API Rate Limits**: BoardGameGeek may rate-limit requests
-  - Wait a few minutes and try again
-  - Images are cached once loaded successfully
+### Data Not Syncing
+- Check browser console (F12) for errors
+- Make sure you deployed with `vercel --prod`
+- Verify Vercel KV database is created and linked
+- Try clicking the sync button (🔄 icon) manually
 
-### GitHub Sync Not Working
-- **Token Permissions**: Verify your token has the correct permissions
-  - **Classic Token**: Needs `repo` (private) or `public_repo` (public)
-  - **Fine-grained Token**: Needs `Contents: Read and write` permission
-- **Repository Format**: Must be exactly `username/repository-name`
-  - Example: `poysama/kaiten` (NOT `github.com/poysama/kaiten`)
-- **Repository Access**: Ensure the token has access to the specified repository
-  - For fine-grained tokens, check it's added to "Repository access"
-- **File Permissions**: The app creates `spinner-data.json` in the root of your repo
-  - Check if the file was created after first sync
-- **Console Errors**: Open browser DevTools (F12) and check Console tab for error details
+### App Not Loading
+- Clear browser cache and hard refresh (Ctrl+F5)
+- Check Vercel deployment logs in dashboard
+- Make sure the deployment succeeded
 
-### Data Lost
-- Export data regularly as backup
-- Use GitHub sync for automatic cloud backup
-- Check browser's LocalStorage hasn't been cleared
+### Session Not Working
+- Both devices need to be on the same Vercel deployment URL
+- Make sure session code is exactly the same (case-sensitive)
+- Click "Join Session" to load data from server
+
+## Vercel Free Tier Limits
+
+- **Bandwidth**: 100 GB/month
+- **Function Executions**: 100 GB-hours/month
+- **KV Storage**: 256 MB storage
+- **KV Commands**: 30,000 commands/month
+
+These limits are more than enough for personal/small group use!
 
 ## Privacy & Security
 
-- All data stored locally in browser by default
-- GitHub token stored in LocalStorage (use with caution)
-- Never share your GitHub token publicly
-- Use a dedicated token with minimal permissions
-- Consider using a private repository for sensitive data
+- All data stored in your own Vercel KV database
+- No third-party analytics or tracking
+- Session codes are stored in Redis, not publicly accessible
+- Data is not shared between different Vercel deployments
 
 ## Contributing
 
@@ -247,7 +264,6 @@ Free to use and modify for personal and commercial purposes.
 ## Credits
 
 - Design inspired by Board Game Arena
-- Game data from BoardGameGeek
 - Built for board game enthusiasts everywhere!
 
 ---
