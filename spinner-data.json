@@ -53,7 +53,7 @@
       "terra-mystica": 0,
       "clans-of-caledonia": 0,
       "castle-combo": 0,
-      "the-guilds-of-merchants-and-explorers": 0
+      "the-guilds-of-merchants-and-explorers": 1
     },
     "gamesSkipped": {
       "forest-shuffle": 0,
@@ -67,9 +67,11 @@
       "castle-combo": 0,
       "the-guilds-of-merchants-and-explorers": 0
     },
-    "lastPlayed": {},
+    "lastPlayed": {
+      "the-guilds-of-merchants-and-explorers": "2025-10-31T12:10:55.457Z"
+    },
     "rerollsToday": 0,
-    "lastRerollDate": null
+    "lastRerollDate": "Fri Oct 31 2025"
   },
   "session": {
     "code": "",
