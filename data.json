@@ -1,0 +1,67 @@
+{
+  "games": [
+    {
+      "id": "forest-shuffle",
+      "name": "Forest Shuffle",
+      "bggId": "391163"
+    },
+    {
+      "id": "forest-shuffle-dartmoor",
+      "name": "Forest Shuffle Dartmoor",
+      "bggId": "391163"
+    },
+    {
+      "id": "its-a-wonderful-world",
+      "name": "It's a Wonderful World",
+      "bggId": "271324"
+    },
+    {
+      "id": "7-wonders",
+      "name": "7 Wonders",
+      "bggId": "68448"
+    },
+    {
+      "id": "cant-stop",
+      "name": "Can't Stop",
+      "bggId": "41"
+    },
+    {
+      "id": "lost-ruins-of-arnak",
+      "name": "Lost Ruins of Arnak",
+      "bggId": "312484"
+    },
+    {
+      "id": "terra-mystica",
+      "name": "Terra Mystica",
+      "bggId": "120677"
+    },
+    {
+      "id": "clans-of-caledonia",
+      "name": "Clans of Caledonia",
+      "bggId": "216132"
+    },
+    {
+      "id": "castle-combo",
+      "name": "Castle Combo",
+      "bggId": "366697"
+    },
+    {
+      "id": "the-guilds-of-merchants-and-explorers",
+      "name": "The Guilds of Merchants and Explorers",
+      "bggId": "350933"
+    }
+  ],
+  "players": [],
+  "stats": {
+    "gamesPlayed": {},
+    "gamesSkipped": {},
+    "lastPlayed": {},
+    "rerollsToday": 0,
+    "lastRerollDate": null
+  },
+  "session": {
+    "code": "",
+    "githubToken": "",
+    "githubRepo": ""
+  }
+}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Game Wheel Spinner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <h1 class="logo">Board Game Spinner</h1>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link active" data-view="spinner">Spinner</a></li>
+                    <li><a href="#" class="nav-link" data-view="stats">Statistics</a></li>
+                    <li><a href="#" class="nav-link" data-view="leaderboard">Leaderboard</a></li>
+                    <li><a href="#" class="nav-link" data-view="admin">Admin</a></li>
+                </ul>
+                <div class="session-info">
+                    <span id="sessionCode"></span>
+                    <button id="syncBtn" class="btn-icon" title="Sync with GitHub">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Spinner View -->
+        <div id="spinnerView" class="view active">
+            <div class="view-container">
+                <div class="reroll-counter">
+                    <span>Rerolls Today: <strong id="rerollCount">0</strong> / <strong id="rerollLimit">0</strong></span>
+                </div>
+
+                <div class="wheel-container">
+                    <canvas id="wheelCanvas" width="600" height="600"></canvas>
+                    <div class="wheel-pointer"></div>
+                </div>
+
+                <div class="spinner-controls">
+                    <button id="spinBtn" class="btn btn-primary btn-large">Spin the Wheel!</button>
+                </div>
+
+                <!-- Result Modal -->
+                <div id="resultModal" class="modal">
+                    <div class="modal-content">
+                        <div class="result-card">
+                            <div id="gameImage" class="game-image"></div>
+                            <h2 id="resultGameName" class="result-title"></h2>
+                            <div class="result-actions">
+                                <button id="confirmBtn" class="btn btn-success">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Confirm
+                                </button>
+                                <button id="skipBtn" class="btn btn-secondary">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+                                    </svg>
+                                    Skip
+                                </button>
+                                <button id="rerollBtn" class="btn btn-warning">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                                    </svg>
+                                    Reroll
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics View -->
+        <div id="statsView" class="view">
+            <div class="view-container">
+                <h2>Game Statistics</h2>
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <h3>Total Games Played</h3>
+                        <p class="stat-number" id="totalPlayed">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Games Skipped</h3>
+                        <p class="stat-number" id="totalSkipped">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Games Never Selected</h3>
+                        <p class="stat-number" id="neverSelected">0</p>
+                    </div>
+                </div>
+                <div class="stats-table">
+                    <table id="statsTable">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Times Played</th>
+                                <th>Times Skipped</th>
+                                <th>Last Played</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard View -->
+        <div id="leaderboardView" class="view">
+            <div class="view-container">
+                <h2>Leaderboards</h2>
+                <div class="leaderboard-section">
+                    <h3>Most Played Games</h3>
+                    <div id="mostPlayedList" class="leaderboard-list"></div>
+                </div>
+                <div class="leaderboard-section">
+                    <h3>Never Played Games</h3>
+                    <div id="neverPlayedList" class="leaderboard-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="adminView" class="view">
+            <div class="view-container">
+                <h2>Admin Panel</h2>
+
+                <!-- Players Management -->
+                <div class="admin-section">
+                    <h3>Manage Players</h3>
+                    <div class="admin-form">
+                        <input type="text" id="newPlayerName" placeholder="Player name" class="input">
+                        <button id="addPlayerBtn" class="btn btn-primary">Add Player</button>
+                    </div>
+                    <ul id="playersList" class="admin-list"></ul>
+                </div>
+
+                <!-- Games Management -->
+                <div class="admin-section">
+                    <h3>Manage Games</h3>
+                    <div class="admin-form">
+                        <input type="text" id="newGameName" placeholder="Game name" class="input">
+                        <input type="text" id="newGameBGG" placeholder="BoardGameGeek ID (optional)" class="input">
+                        <button id="addGameBtn" class="btn btn-primary">Add Game</button>
+                    </div>
+                    <ul id="gamesList" class="admin-list"></ul>
+                </div>
+
+                <!-- Session Management -->
+                <div class="admin-section">
+                    <h3>Session Settings</h3>
+                    <div class="admin-form">
+                        <input type="text" id="sessionCodeInput" placeholder="Session code" class="input">
+                        <button id="createSessionBtn" class="btn btn-primary">Create Session</button>
+                        <button id="joinSessionBtn" class="btn btn-secondary">Join Session</button>
+                    </div>
+                    <p class="help-text">Create a session to sync data across devices using GitHub</p>
+                </div>
+
+                <!-- GitHub Settings -->
+                <div class="admin-section">
+                    <h3>GitHub Integration</h3>
+                    <div class="admin-form">
+                        <input type="text" id="githubToken" placeholder="GitHub Personal Access Token" class="input" type="password">
+                        <input type="text" id="githubRepo" placeholder="username/repo" class="input" value="">
+                        <button id="saveGithubBtn" class="btn btn-primary">Save Settings</button>
+                    </div>
+                    <p class="help-text">Token needs 'repo' scope for private repos or 'public_repo' for public repos</p>
+                </div>
+
+                <!-- Data Management -->
+                <div class="admin-section">
+                    <h3>Data Management</h3>
+                    <div class="admin-buttons">
+                        <button id="exportDataBtn" class="btn btn-secondary">Export Data</button>
+                        <button id="importDataBtn" class="btn btn-secondary">Import Data</button>
+                        <button id="resetDataBtn" class="btn btn-danger">Reset All Data</button>
+                    </div>
+                    <input type="file" id="importFileInput" style="display: none;" accept=".json">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
