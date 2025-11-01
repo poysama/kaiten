@@ -146,9 +146,19 @@ export default function AdminPage() {
   async function resetStats() {
     if (!confirm('Are you sure you want to reset all statistics? This cannot be undone!')) return;
 
-    const res = await fetch('/api/stats/reset', { method: 'POST' });
-    if (res.ok) {
-      alert('Statistics reset successfully!');
+    try {
+      const res = await fetch('/api/stats/reset', { method: 'POST' });
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`Success! ${data.message}\nDeleted ${data.deletedKeys} old keys, reset ${data.gamesReset} games.`);
+      } else {
+        alert(`Error: ${data.error}\n\nCheck console for details.`);
+        console.error('Reset error:', data);
+      }
+    } catch (error) {
+      alert(`Failed to reset statistics: ${error.message}`);
+      console.error('Reset error:', error);
     }
   }
 
