@@ -29,12 +29,10 @@ export async function POST() {
     }
 
     // Initialize fresh stats for all current games
+    // Use hset with field-value pairs to set all fields at once
     const multi = redis.multi();
     ids.forEach(id => {
-      // Use separate commands for each field to ensure they're stored as strings
-      multi.hset(`stats:game:${id}`, 'played', '0');
-      multi.hset(`stats:game:${id}`, 'skipped', '0');
-      multi.hset(`stats:game:${id}`, 'picks', '0');
+      multi.hset(`stats:game:${id}`, 'played', '0', 'skipped', '0', 'picks', '0');
     });
 
     const results = await multi.exec();

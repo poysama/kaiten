@@ -10,10 +10,13 @@ export async function POST(request) {
     }
 
     const redis = getRedis();
-    await redis.hincrby(`stats:game:${id}`, 'skipped', 1);
+    console.log('[SKIP] Incrementing skipped for game:', id);
+    const newValue = await redis.hincrby(`stats:game:${id}`, 'skipped', 1);
+    console.log('[SKIP] New skipped value:', newValue);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, newValue });
   } catch (error) {
+    console.error('[SKIP] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

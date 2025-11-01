@@ -15,10 +15,13 @@ export async function POST() {
     const raw = await redis.get(`game:${id}`);
     const pick = JSON.parse(raw);
 
-    await redis.hincrby(`stats:game:${id}`, 'picks', 1);
+    console.log('[PICK] Incrementing picks for game:', id, pick.name);
+    const newValue = await redis.hincrby(`stats:game:${id}`, 'picks', 1);
+    console.log('[PICK] New picks value:', newValue);
 
     return NextResponse.json({ index: idx, pick });
   } catch (error) {
+    console.error('[PICK] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

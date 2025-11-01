@@ -10,10 +10,13 @@ export async function POST(request) {
     }
 
     const redis = getRedis();
-    await redis.hincrby(`stats:game:${id}`, 'played', 1);
+    console.log('[CONFIRM] Incrementing played for game:', id);
+    const newValue = await redis.hincrby(`stats:game:${id}`, 'played', 1);
+    console.log('[CONFIRM] New played value:', newValue);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, newValue });
   } catch (error) {
+    console.error('[CONFIRM] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

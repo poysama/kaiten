@@ -35,8 +35,8 @@ export async function GET() {
     const mostPlayed = [...detailed].sort((a, b) => b.played - a.played);
     const mostSkipped = [...detailed].sort((a, b) => b.skipped - a.skipped);
 
-    // Sort allGames by name alphabetically
-    const allGames = [...detailed].sort((a, b) => a.name.localeCompare(b.name));
+    // Sort allGames by picks descending (most picked first)
+    const allGames = [...detailed].sort((a, b) => b.picks - a.picks);
 
     return NextResponse.json({
       mostPlayed,
