@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 
+// Disable caching for this endpoint
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const redis = getRedis();
