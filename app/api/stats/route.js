@@ -32,7 +32,8 @@ export async function GET() {
         name: game.name,
         played: parseInt(stats.played || 0),
         skipped: parseInt(stats.skipped || 0),
-        picks: parseInt(stats.picks || 0)
+        picks: parseInt(stats.picks || 0),
+        weight: parseFloat(stats.weight || 1.0)
       });
     }
 

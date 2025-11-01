@@ -10,7 +10,9 @@
     "lint": "next lint",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f redis"
+    "docker:logs": "docker-compose logs -f redis",
+    "migrate:check": "node scripts/migrate.js check",
+    "migrate:run": "node scripts/migrate.js run"
   },
   "dependencies": {
     "ioredis": "^5.3.2",

@@ -53,8 +53,102 @@
 }
 
 .main h2 {
-  margin-bottom: 2rem;
+  margin: 0;
   font-size: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggleCheckbox {
+  width: 50px;
+  height: 26px;
+  appearance: none;
+  background: #ddd;
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggleCheckbox:checked {
+  background: #00B0FF;
+}
+
+.toggleCheckbox::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggleCheckbox:checked::before {
+  transform: translateX(24px);
+}
+
+.toggleLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.filterContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filterLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.filterSelect {
+  padding: 0.5rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filterSelect:hover {
+  border-color: #00B0FF;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #00B0FF;
 }
 
 .gamePickerContainer {
@@ -82,7 +176,7 @@
   align-items: center;
   justify-content: center;
   background: #f5f5f5;
-  border: 3px solid transparent;
+  border: 3px solid #00B0FF;
   border-radius: 10px;
   text-align: center;
   font-size: 1.2rem;
@@ -92,12 +186,17 @@
   cursor: pointer;
 }
 
+.gameCard.lowPriority {
+  background: color-mix(in srgb, #f5f5f5 40%, #888);
+  border-color: color-mix(in srgb, #00B0FF 40%, #888);
+  color: color-mix(in srgb, #333 40%, #888);
+}
+
 .gameCard:hover:not(.highlighted) {
   transform: scale(1.15);
   background: #FFBC00;
-  border-color: #FF0100;
   color: #000;
-  box-shadow: 0 4px 12px rgba(255, 188, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(255, 188, 0, 0.6), 0 0 0 3px rgba(255, 188, 0, 0.3);
   z-index: 10;
 }
 
@@ -107,21 +206,23 @@
   bottom: 120%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.95);
+  background: linear-gradient(135deg, rgba(40, 40, 60, 0.95) 0%, rgba(50, 50, 70, 0.95) 100%);
   color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 400;
   white-space: pre-line;
-  text-align: center;
-  line-height: 1.5;
+  text-align: left;
+  line-height: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
   z-index: 100;
-  min-width: max-content;
-  max-width: 250px;
+  min-width: 280px;
+  max-width: 320px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
 }
 
 .gameCard::before {
@@ -131,7 +232,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
+  border-top-color: rgba(40, 40, 60, 0.95);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -140,7 +241,7 @@
 
 .gameCard:hover::after,
 .gameCard:hover::before {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .gameCard.highlighted {

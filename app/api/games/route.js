@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { name, meta } = await request.json();
+    const { name, meta, length } = await request.json();
 
     if (!name) {
       return NextResponse.json({ error: "name required" }, { status: 400 });
@@ -35,11 +35,16 @@ export async function POST(request) {
 
     const redis = getRedis();
     const gameId = `g_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const obj = { id: gameId, name, meta: meta || {} };
+    const obj = {
+      id: gameId,
+      name,
+      length: length || 'medium',
+      meta: meta || {}
+    };
 
     await redis.set(`game:${gameId}`, JSON.stringify(obj));
     await redis.sadd("games:ids", gameId);
-    await redis.hset(`stats:game:${gameId}`, { played: 0, skipped: 0, picks: 0 });
+    await redis.hset(`stats:game:${gameId}`, { played: 0, skipped: 0, picks: 0, weight: '1.000' });
 
     return NextResponse.json({ ok: true, game: obj });
   } catch (error) {
@@ -49,7 +54,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const { id, name, meta } = await request.json();
+    const { id, name, meta, length } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: "id required" }, { status: 400 });
@@ -63,8 +68,9 @@ export async function PUT(request) {
     }
 
     const obj = JSON.parse(raw);
-    if (name) obj.name = name;
-    if (meta) obj.meta = meta;
+    if (name !== undefined) obj.name = name;
+    if (meta !== undefined) obj.meta = meta;
+    if (length !== undefined) obj.length = length;
 
     await redis.set(`game:${id}`, JSON.stringify(obj));
 

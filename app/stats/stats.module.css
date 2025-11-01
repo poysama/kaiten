@@ -157,6 +157,11 @@
   border-bottom: none;
 }
 
+.lowPriority {
+  opacity: 0.5;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .statsGrid {
     grid-template-columns: 1fr;

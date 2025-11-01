@@ -42,6 +42,7 @@ export default function StatsPage() {
               <thead>
                 <tr>
                   <th>Game</th>
+                  <th>Weight</th>
                   <th>Picks</th>
                   <th>Played</th>
                   <th>Skipped</th>
@@ -51,7 +52,7 @@ export default function StatsPage() {
               <tbody>
                 {stats.allGames.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
                       No games yet
                     </td>
                   </tr>
@@ -60,9 +61,13 @@ export default function StatsPage() {
                     const playRate = game.picks > 0
                       ? ((game.played / game.picks) * 100).toFixed(1)
                       : '0.0';
+                    const weight = game.weight || 1.0;
+                    // Red highlight for low priority games (weight < 0.3)
+                    const weightClass = weight < 0.3 ? styles.lowPriority : '';
                     return (
                       <tr key={game.id}>
                         <td>{game.name}</td>
+                        <td className={weightClass}>{weight.toFixed(3)}</td>
                         <td>{game.picks}</td>
                         <td>{game.played}</td>
                         <td>{game.skipped}</td>

@@ -10,11 +10,34 @@ export default function SpinnerPage() {
   const [showModal, setShowModal] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [gameStats, setGameStats] = useState({});
+  const [weightingEnabled, setWeightingEnabled] = useState(true);
+  const [lengthFilter, setLengthFilter] = useState('all');
 
   useEffect(() => {
     loadGames();
     loadStats();
+    // Load preferences from localStorage
+    const savedWeighting = localStorage.getItem('weightingEnabled');
+    if (savedWeighting !== null) {
+      setWeightingEnabled(savedWeighting === 'true');
+    }
+    const savedLength = localStorage.getItem('lengthFilter');
+    if (savedLength !== null) {
+      setLengthFilter(savedLength);
+    }
   }, []);
+
+  function toggleWeighting() {
+    const newValue = !weightingEnabled;
+    setWeightingEnabled(newValue);
+    localStorage.setItem('weightingEnabled', newValue.toString());
+  }
+
+  function handleLengthFilterChange(e) {
+    const newValue = e.target.value;
+    setLengthFilter(newValue);
+    localStorage.setItem('lengthFilter', newValue);
+  }
 
   async function loadGames() {
     const res = await fetch('/api/games');
@@ -31,10 +54,22 @@ export default function SpinnerPage() {
       statsMap[game.id] = {
         picks: game.picks,
         played: game.played,
-        skipped: game.skipped
+        skipped: game.skipped,
+        weight: game.weight
       };
     });
     setGameStats(statsMap);
+  }
+
+  function calculatePickProbability(gameWeight, allStats) {
+    // Calculate total weight of all games
+    const totalWeight = Object.values(allStats).reduce((sum, stat) => sum + (stat.weight || 1.0), 0);
+
+    if (totalWeight === 0) return 0;
+
+    // Probability is this game's weight divided by total weight
+    const probability = (gameWeight / totalWeight) * 100;
+    return probability;
   }
 
   async function spinWheel() {
@@ -43,7 +78,14 @@ export default function SpinnerPage() {
     setSpinning(true);
     setShowModal(false);
 
-    const res = await fetch('/api/pick', { method: 'POST' });
+    const res = await fetch('/api/pick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        useWeighting: weightingEnabled,
+        lengthFilter: lengthFilter
+      })
+    });
     const data = await res.json();
 
     if (data.error) {
@@ -118,14 +160,48 @@ export default function SpinnerPage() {
       </nav>
 
       <main className={styles.main}>
-        <h2>Game Selection</h2>
+        <div className={styles.header}>
+          <h2>Game Selection</h2>
+          <div className={styles.controls}>
+            <label className={styles.toggleContainer}>
+              <input
+                type="checkbox"
+                checked={weightingEnabled}
+                onChange={toggleWeighting}
+                className={styles.toggleCheckbox}
+              />
+              <span className={styles.toggleLabel}>
+                Weighted Selection {weightingEnabled ? 'ON' : 'OFF'}
+              </span>
+            </label>
+            <div className={styles.filterContainer}>
+              <label className={styles.filterLabel}>Game Length:</label>
+              <select
+                value={lengthFilter}
+                onChange={handleLengthFilterChange}
+                className={styles.filterSelect}
+              >
+                <option value="all">All</option>
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         {games.length === 0 ? (
           <p>No games available. Add games in the Admin panel.</p>
         ) : (
           <div className={styles.gamePickerContainer}>
             <div className={styles.gameGrid}>
-              {games.map((game, index) => {
+              {games
+                .filter(game => {
+                  // Filter by length - default to 'medium' for games without length property
+                  const gameLength = game.length || 'medium';
+                  return lengthFilter === 'all' || gameLength === lengthFilter;
+                })
+                .map((game, index) => {
                 // Generate initials from game name
                 const initials = game.name
                   .split(' ')
@@ -135,15 +211,21 @@ export default function SpinnerPage() {
                   .slice(0, 4);
 
                 // Get stats for this game
-                const stats = gameStats[game.id] || { picks: 0, played: 0, skipped: 0 };
-                const tooltipText = `${game.name}\nPicks: ${stats.picks} | Played: ${stats.played} | Skipped: ${stats.skipped}`;
+                const stats = gameStats[game.id] || { picks: 0, played: 0, skipped: 0, weight: 1.0 };
+                const pickProbability = calculatePickProbability(stats.weight, gameStats);
+                const tooltipText = `${game.name}\n\nWeight: ${stats.weight.toFixed(3)}\nPick Chance: ${pickProbability.toFixed(1)}%\n\nPicks: ${stats.picks}\nPlayed: ${stats.played}\nSkipped: ${stats.skipped}`;
+
+                // Determine priority based on weight
+                // Low weight (<0.3) = low priority = red border
+                // High weight (>1.2) = high priority = default blue border
+                const isLowPriority = stats.weight < 0.3;
 
                 return (
                   <div
                     key={game.id}
                     className={`${styles.gameCard} ${
                       highlightedIndex === index ? styles.highlighted : ''
-                    }`}
+                    } ${isLowPriority ? styles.lowPriority : ''}`}
                     data-tooltip={tooltipText}
                   >
                     {initials}

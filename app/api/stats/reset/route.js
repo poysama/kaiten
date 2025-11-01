@@ -35,6 +35,7 @@ export async function POST() {
       multi.hset(`stats:game:${id}`, 'played', '0');
       multi.hset(`stats:game:${id}`, 'skipped', '0');
       multi.hset(`stats:game:${id}`, 'picks', '0');
+      multi.hset(`stats:game:${id}`, 'weight', '1.000');
     });
 
     const results = await multi.exec();
