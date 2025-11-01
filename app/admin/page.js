@@ -5,7 +5,6 @@ import styles from './admin.module.css';
 
 export default function AdminPage() {
   const [games, setGames] = useState([]);
-  const [newGameName, setNewGameName] = useState('');
   const [bulkGames, setBulkGames] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -14,6 +13,7 @@ export default function AdminPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -65,22 +65,6 @@ export default function AdminPage() {
     const res = await fetch('/api/games');
     const data = await res.json();
     setGames(data.games || []);
-  }
-
-  async function addGame(e) {
-    e.preventDefault();
-    if (!newGameName.trim()) return;
-
-    const res = await fetch('/api/games', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newGameName.trim() })
-    });
-
-    if (res.ok) {
-      setNewGameName('');
-      loadGames();
-    }
   }
 
   async function deleteGame(id) {
@@ -166,7 +150,10 @@ export default function AdminPage() {
     return (
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <h1>Board Game Randomizer - Admin</h1>
+          <div className={styles.navBrand}>
+            <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
+            <h1>Board Game Randomizer - Admin</h1>
+          </div>
           <div className={styles.navLinks}>
             <a href="/">Randomizer</a>
             <a href="/stats">Statistics</a>
@@ -184,7 +171,10 @@ export default function AdminPage() {
     return (
       <div className={styles.container}>
         <nav className={styles.nav}>
-          <h1>Board Game Randomizer - Admin</h1>
+          <div className={styles.navBrand}>
+            <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
+            <h1>Board Game Randomizer - Admin</h1>
+          </div>
           <div className={styles.navLinks}>
             <a href="/">Randomizer</a>
             <a href="/stats">Statistics</a>
@@ -225,9 +215,12 @@ export default function AdminPage() {
   return (
     <div className={styles.container}>
       <nav className={styles.nav}>
-        <h1>Board Game Spinner - Admin</h1>
+        <div className={styles.navBrand}>
+          <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
+          <h1>Board Game Randomizer - Admin</h1>
+        </div>
         <div className={styles.navLinks}>
-          <a href="/">Spinner</a>
+          <a href="/">Randomizer</a>
           <a href="/stats">Statistics</a>
           <a href="/admin">Admin</a>
           <button onClick={handleLogout} className={styles.logoutBtn}>
@@ -238,23 +231,7 @@ export default function AdminPage() {
 
       <main className={styles.main}>
         <div className={styles.card}>
-          <h2>Add New Game</h2>
-          <form onSubmit={addGame} className={styles.addForm}>
-            <input
-              type="text"
-              value={newGameName}
-              onChange={(e) => setNewGameName(e.target.value)}
-              placeholder="Enter game name..."
-              className={styles.input}
-            />
-            <button type="submit" className={styles.addButton}>
-              Add Game
-            </button>
-          </form>
-        </div>
-
-        <div className={styles.card}>
-          <h2>Bulk Add Games</h2>
+          <h2>Add Games</h2>
           <form onSubmit={bulkAddGames} className={styles.bulkForm}>
             <textarea
               value={bulkGames}
@@ -264,7 +241,7 @@ export default function AdminPage() {
               rows={8}
             />
             <button type="submit" className={styles.addButton}>
-              Add All Games
+              Add Games
             </button>
           </form>
         </div>
@@ -276,11 +253,28 @@ export default function AdminPage() {
               Reset Statistics
             </button>
           </div>
+          <div className={styles.searchContainer}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search games..."
+              className={styles.searchInput}
+            />
+          </div>
           <div className={styles.gamesList}>
             {games.length === 0 ? (
               <p className={styles.emptyState}>No games yet. Add your first game above!</p>
-            ) : (
-              games.map((game) => (
+            ) : (() => {
+              const filteredGames = games.filter(game =>
+                game.name.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              if (filteredGames.length === 0) {
+                return <p className={styles.emptyState}>No games found matching "{searchQuery}"</p>;
+              }
+
+              return filteredGames.map((game) => (
                 <div key={game.id} className={styles.gameItem}>
                   {editingId === game.id ? (
                     <>
@@ -314,8 +308,8 @@ export default function AdminPage() {
                     </>
                   )}
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
         </div>
       </main>

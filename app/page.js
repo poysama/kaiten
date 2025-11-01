@@ -9,15 +9,32 @@ export default function SpinnerPage() {
   const [selectedGame, setSelectedGame] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(null);
+  const [gameStats, setGameStats] = useState({});
 
   useEffect(() => {
     loadGames();
+    loadStats();
   }, []);
 
   async function loadGames() {
     const res = await fetch('/api/games');
     const data = await res.json();
     setGames(data.games || []);
+  }
+
+  async function loadStats() {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    // Convert array to object keyed by game id for easy lookup
+    const statsMap = {};
+    data.allGames.forEach(game => {
+      statsMap[game.id] = {
+        picks: game.picks,
+        played: game.played,
+        skipped: game.skipped
+      };
+    });
+    setGameStats(statsMap);
   }
 
   async function spinWheel() {
@@ -89,7 +106,10 @@ export default function SpinnerPage() {
   return (
     <div className={styles.container}>
       <nav className={styles.nav}>
-        <h1>Board Game Randomizer</h1>
+        <div className={styles.navBrand}>
+          <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
+          <h1>Board Game Randomizer</h1>
+        </div>
         <div className={styles.navLinks}>
           <a href="/">Randomizer</a>
           <a href="/stats">Statistics</a>
@@ -98,7 +118,7 @@ export default function SpinnerPage() {
       </nav>
 
       <main className={styles.main}>
-        <h2>Pick a Game!</h2>
+        <h2>Game Selection</h2>
 
         {games.length === 0 ? (
           <p>No games available. Add games in the Admin panel.</p>
@@ -114,13 +134,17 @@ export default function SpinnerPage() {
                   .toUpperCase()
                   .slice(0, 4);
 
+                // Get stats for this game
+                const stats = gameStats[game.id] || { picks: 0, played: 0, skipped: 0 };
+                const tooltipText = `${game.name}\nPicks: ${stats.picks} | Played: ${stats.played} | Skipped: ${stats.skipped}`;
+
                 return (
                   <div
                     key={game.id}
                     className={`${styles.gameCard} ${
                       highlightedIndex === index ? styles.highlighted : ''
                     }`}
-                    title={game.name}
+                    data-tooltip={tooltipText}
                   >
                     {initials}
                   </div>

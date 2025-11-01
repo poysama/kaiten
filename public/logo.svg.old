@@ -1,0 +1,14 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Spinning wheel outer ring -->
+  <circle cx="24" cy="24" r="20" stroke="#FF0100" stroke-width="3" fill="none"/>
+
+  <!-- Wheel segments -->
+  <path d="M24 24 L24 4 A20 20 0 0 1 44 24 Z" fill="#FFBC00"/>
+  <path d="M24 24 L44 24 A20 20 0 0 1 24 44 Z" fill="#FF0100"/>
+  <path d="M24 24 L24 44 A20 20 0 0 1 4 24 Z" fill="#FFBC00"/>
+  <path d="M24 24 L4 24 A20 20 0 0 1 24 4 Z" fill="#FF0100"/>
+
+  <!-- Center circle -->
+  <circle cx="24" cy="24" r="6" fill="#000"/>
+  <circle cx="24" cy="24" r="3" fill="#FFF"/>
+</svg>

@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Board Game Selector',
+  title: 'Kaiten',
   description: 'Spin the wheel to decide what board game to play!',
 }
 

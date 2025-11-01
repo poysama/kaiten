@@ -12,6 +12,17 @@
   color: white;
 }
 
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+}
+
 .nav h1 {
   margin: 0;
   font-size: 1.5rem;
@@ -265,4 +276,22 @@
 
 .logoutBtn:hover {
   background: #cc0000;
+}
+
+.searchContainer {
+  margin-bottom: 1.5rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #00B0FF;
 }

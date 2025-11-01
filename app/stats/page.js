@@ -23,7 +23,10 @@ export default function StatsPage() {
   return (
     <div className={styles.container}>
       <nav className={styles.nav}>
-        <h1>Board Game Randomizer - Statistics</h1>
+        <div className={styles.navBrand}>
+          <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
+          <h1>Board Game Randomizer - Statistics</h1>
+        </div>
         <div className={styles.navLinks}>
           <a href="/">Randomizer</a>
           <a href="/stats">Statistics</a>
