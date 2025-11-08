@@ -1,38 +1,89 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './stats.module.css';
 
 export default function StatsPage() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     mostPlayed: [],
     mostSkipped: [],
     allGames: []
   });
+  const [roomCode, setRoomCode] = useState(null);
+  const [roomName, setRoomName] = useState('');
+  const [isHost, setIsHost] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadStats();
+    // Check if user is in a room
+    const code = localStorage.getItem('roomCode');
+    const host = localStorage.getItem('isHost') === 'true';
+
+    if (!code) {
+      // Redirect to room page if not in a room
+      router.push('/room');
+      return;
+    }
+
+    setRoomCode(code);
+    setIsHost(host);
+    loadRoomInfo(code);
+    loadStats(code);
   }, []);
 
-  async function loadStats() {
-    const res = await fetch('/api/stats');
-    const data = await res.json();
-    setStats(data);
+  async function loadRoomInfo(code) {
+    try {
+      const userId = localStorage.getItem('userId');
+      const res = await fetch('/api/room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get', roomCode: code, userId })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setRoomName(data.room.name);
+      }
+    } catch (error) {
+      console.error('Error loading room info:', error);
+    }
+  }
+
+  async function loadStats(code) {
+    try {
+      const res = await fetch(`/api/stats?roomCode=${code || roomCode}`);
+      const data = await res.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
+
+  if (!roomCode) {
+    return null;
   }
 
   return (
     <div className={styles.container}>
-      <nav className={styles.nav}>
-        <div className={styles.navBrand}>
-          <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
-          <h1>Board Game Randomizer - Statistics</h1>
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.roomInfo}>
+            <h1>Statistics: {roomName}</h1>
+            <span className={styles.roomCode}>Code: {roomCode}</span>
+            {isHost && <span className={styles.hostBadge}>👑 Host</span>}
+          </div>
+          <div className={styles.navLinks}>
+            <a href="/">← Back to Room</a>
+          </div>
         </div>
-        <div className={styles.navLinks}>
-          <a href="/">Randomizer</a>
-          <a href="/stats">Statistics</a>
-          <a href="/admin">Admin</a>
-        </div>
-      </nav>
+      </div>
 
       <main className={styles.main}>
         <div className={styles.overviewCard}>

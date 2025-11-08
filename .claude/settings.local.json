@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/populate-redis.js:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

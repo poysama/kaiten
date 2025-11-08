@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './spinner.module.css';
+import GameHistory from './components/GameHistory';
+import RoomMembers from './components/RoomMembers';
 
 export default function SpinnerPage() {
+  const router = useRouter();
   const [games, setGames] = useState([]);
   const [spinning, setSpinning] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -12,10 +16,33 @@ export default function SpinnerPage() {
   const [gameStats, setGameStats] = useState({});
   const [weightingEnabled, setWeightingEnabled] = useState(true);
   const [lengthFilter, setLengthFilter] = useState('all');
+  const [isHost, setIsHost] = useState(false);
+  const [roomCode, setRoomCode] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [currentSession, setCurrentSession] = useState(null);
+  const [votes, setVotes] = useState({ confirm: 0, skip: 0 });
+  const [roomReady, setRoomReady] = useState(false);
 
   useEffect(() => {
+    // Check if user is in a room
+    const code = localStorage.getItem('roomCode');
+    const host = localStorage.getItem('isHost') === 'true';
+    const uid = localStorage.getItem('userId');
+
+    if (!code || !uid) {
+      // Redirect to room page
+      router.push('/room');
+      return;
+    }
+
+    setRoomCode(code);
+    setIsHost(host);
+    setUserId(uid);
+    setRoomReady(true);
+
     loadGames();
     loadStats();
+
     // Load preferences from localStorage
     const savedWeighting = localStorage.getItem('weightingEnabled');
     if (savedWeighting !== null) {
@@ -26,6 +53,15 @@ export default function SpinnerPage() {
       setLengthFilter(savedLength);
     }
   }, []);
+
+  // Separate effect for polling that depends on roomReady
+  useEffect(() => {
+    if (!roomReady) return;
+
+    // Poll for session updates every 1 second
+    const sessionPoll = setInterval(pollSession, 1000);
+    return () => clearInterval(sessionPoll);
+  }, [roomReady]);
 
   function toggleWeighting() {
     const newValue = !weightingEnabled;
@@ -40,13 +76,19 @@ export default function SpinnerPage() {
   }
 
   async function loadGames() {
-    const res = await fetch('/api/games');
+    const code = localStorage.getItem('roomCode');
+    if (!code) return;
+
+    const res = await fetch(`/api/games?roomCode=${code}`);
     const data = await res.json();
     setGames(data.games || []);
   }
 
   async function loadStats() {
-    const res = await fetch('/api/stats');
+    const code = localStorage.getItem('roomCode');
+    if (!code) return;
+
+    const res = await fetch(`/api/stats?roomCode=${code}`);
     const data = await res.json();
     // Convert array to object keyed by game id for easy lookup
     const statsMap = {};
@@ -61,6 +103,95 @@ export default function SpinnerPage() {
     setGameStats(statsMap);
   }
 
+  async function pollSession() {
+    if (!roomCode) return;
+
+    const res = await fetch(`/api/session?roomCode=${roomCode}`);
+    const data = await res.json();
+
+    console.log('[POLL] Session data:', data.session);
+
+    if (data.session) {
+      const isNewSession = !currentSession || currentSession.id !== data.session.id;
+      const statusChanged = currentSession && currentSession.status !== data.session.status;
+
+      console.log('[POLL] isNewSession:', isNewSession, 'statusChanged:', statusChanged);
+
+      // Handle NEW "spinning" session - start animation for viewers
+      if (data.session.status === 'spinning' && isNewSession && !isHost) {
+        console.log('[POLL] Starting spinning animation for viewer');
+        setCurrentSession(data.session);
+        setSpinning(true);
+        setShowModal(false);
+
+        // Flash through games randomly
+        const flashDuration = 2500;
+        const flashInterval = 100;
+        const startTime = Date.now();
+
+        const flashTimer = setInterval(() => {
+          const randomIndex = Math.floor(Math.random() * games.length);
+          setHighlightedIndex(randomIndex);
+
+          if (Date.now() - startTime >= flashDuration) {
+            clearInterval(flashTimer);
+            setHighlightedIndex(null);
+            // Animation done, wait for session to become 'active'
+          }
+        }, flashInterval);
+      }
+      // Handle transition from "spinning" to "active" - show the selected game
+      else if (data.session.status === 'active' && statusChanged && !isHost) {
+        console.log('[POLL] Session became active, showing result');
+        const game = games.find(g => g.id === data.session.gameId);
+
+        if (game) {
+          setCurrentSession(data.session);
+          setVotes(data.session.votes || { confirm: 0, skip: 0 });
+
+          // Highlight the selected game
+          const selectedIndex = games.findIndex(g => g.id === data.session.gameId);
+          setHighlightedIndex(selectedIndex);
+
+          // Show modal after a brief pause
+          setTimeout(() => {
+            setSelectedGame(game);
+            setShowModal(true);
+            setSpinning(false);
+          }, 500);
+        }
+      }
+      // Just update current session state and votes
+      else if (data.session.status === 'active') {
+        setCurrentSession(data.session);
+        setVotes(data.session.votes || { confirm: 0, skip: 0 });
+
+        // Update selected game if modal is showing
+        if (showModal && data.session.gameId) {
+          const game = games.find(g => g.id === data.session.gameId);
+          if (game) {
+            setSelectedGame(game);
+          }
+        }
+      }
+      // Update for spinning status (for hosts who created the session)
+      else {
+        setCurrentSession(data.session);
+      }
+    } else {
+      // No active session
+      if (currentSession) {
+        // Session was just closed
+        setShowModal(false);
+        setSelectedGame(null);
+        setCurrentSession(null);
+        setVotes({ confirm: 0, skip: 0 });
+        setSpinning(false);
+        setHighlightedIndex(null);
+      }
+    }
+  }
+
   function calculatePickProbability(gameWeight, allStats) {
     // Calculate total weight of all games
     const totalWeight = Object.values(allStats).reduce((sum, stat) => sum + (stat.weight || 1.0), 0);
@@ -73,6 +204,10 @@ export default function SpinnerPage() {
   }
 
   async function spinWheel() {
+    if (!isHost) {
+      alert('Only the host can pick a game!');
+      return;
+    }
     if (spinning || games.length === 0) return;
 
     setSpinning(true);
@@ -83,7 +218,8 @@ export default function SpinnerPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         useWeighting: weightingEnabled,
-        lengthFilter: lengthFilter
+        lengthFilter: lengthFilter,
+        roomCode: roomCode
       })
     });
     const data = await res.json();
@@ -120,29 +256,61 @@ export default function SpinnerPage() {
   }
 
   async function confirmGame() {
-    await fetch('/api/confirm', {
+    // If host, finalize immediately. If not, vote
+    const isVote = !isHost;
+
+    const res = await fetch('/api/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: selectedGame.id })
+      body: JSON.stringify({ id: selectedGame.id, isVote, roomCode })
     });
-    setShowModal(false);
-    setSelectedGame(null);
+
+    const data = await res.json();
+
+    if (isHost || data.sessionClosed) {
+      // Only close modal for host or when session ends
+      setShowModal(false);
+      setSelectedGame(null);
+    }
+    // Otherwise, votes will update via polling
   }
 
   async function skipGame() {
-    await fetch('/api/skip', {
+    // If host, finalize immediately. If not, vote
+    const isVote = !isHost;
+
+    const res = await fetch('/api/skip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: selectedGame.id })
+      body: JSON.stringify({ id: selectedGame.id, isVote, roomCode })
     });
-    setShowModal(false);
-    setSelectedGame(null);
+
+    const data = await res.json();
+
+    if (isHost || data.sessionClosed) {
+      // Only close modal for host or when session ends
+      setShowModal(false);
+      setSelectedGame(null);
+    }
+    // Otherwise, votes will update via polling
   }
 
   function respin() {
     setShowModal(false);
     setSelectedGame(null);
     spinWheel();
+  }
+
+  function leaveRoom() {
+    if (confirm('Are you sure you want to leave this room?')) {
+      localStorage.removeItem('roomCode');
+      localStorage.removeItem('isHost');
+      router.push('/room');
+    }
+  }
+
+  if (!roomReady) {
+    return <div className={styles.loading}>Loading...</div>;
   }
 
   return (
@@ -152,15 +320,25 @@ export default function SpinnerPage() {
           <img src="/logo.svg" alt="Kaiten Logo" className={styles.logo} />
           <h1>Board Game Randomizer</h1>
         </div>
+        <div className={styles.navCenter}>
+          <div className={styles.roomInfo}>
+            Room Code: <span className={styles.roomCode}>{roomCode}</span>
+          </div>
+        </div>
         <div className={styles.navLinks}>
-          <a href="/">Randomizer</a>
           <a href="/stats">Statistics</a>
           <a href="/admin">Admin</a>
+          <button onClick={leaveRoom} className={styles.leaveButton}>Leave Room</button>
         </div>
       </nav>
 
-      <main className={styles.main}>
-        <div className={styles.header}>
+      <div className={styles.pageLayout}>
+        <aside className={styles.sidebarLeft}>
+          <GameHistory />
+        </aside>
+
+        <main className={styles.main}>
+          <div className={styles.header}>
           <h2>Game Selection</h2>
           <div className={styles.controls}>
             <label className={styles.toggleContainer}>
@@ -233,32 +411,53 @@ export default function SpinnerPage() {
                 );
               })}
             </div>
-            <button
-              className={styles.rollButton}
-              onClick={spinWheel}
-              disabled={spinning}
-            >
-              {spinning ? 'Picking...' : 'PICK GAME'}
-            </button>
+            <div className={styles.buttonContainer}>
+              <button
+                className={styles.rollButton}
+                onClick={spinWheel}
+                disabled={spinning || !isHost}
+              >
+                {spinning ? 'Picking...' : isHost ? 'PICK GAME' : 'PICK GAME (Host Only)'}
+              </button>
+              {isHost && <span className={styles.hostBadge}>👑 You are the host</span>}
+              {!isHost && <span className={styles.viewerBadge}>👥 Viewer</span>}
+            </div>
           </div>
         )}
-      </main>
+        </main>
+
+        <aside className={styles.sidebarRight}>
+          <RoomMembers />
+        </aside>
+      </div>
 
       {showModal && selectedGame && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
             <h2>You got:</h2>
             <h1>{selectedGame.name}</h1>
+
+            {!isHost && votes && (
+              <div className={styles.votingStatus}>
+                <p>Waiting for votes...</p>
+                <div className={styles.voteCount}>
+                  ✓ Confirm: {votes.confirm} | ✗ Skip: {votes.skip}
+                </div>
+              </div>
+            )}
+
             <div className={styles.modalButtons}>
               <button onClick={confirmGame} className={styles.confirmBtn}>
-                Confirm - Let's Play!
+                {isHost ? 'Confirm - Let\'s Play!' : 'Vote: Confirm'}
               </button>
               <button onClick={skipGame} className={styles.skipBtn}>
-                Skip
+                {isHost ? 'Skip' : 'Vote: Skip'}
               </button>
-              <button onClick={respin} className={styles.respinBtn}>
-                Re-spin
-              </button>
+              {isHost && (
+                <button onClick={respin} className={styles.respinBtn}>
+                  Re-spin
+                </button>
+              )}
             </div>
           </div>
         </div>

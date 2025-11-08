@@ -1,0 +1,117 @@
+.historyContainer {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  height: fit-content;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.empty {
+  color: #6c757d;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.historyItem {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border-left: 4px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.historyItem:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.itemNumber {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6c757d;
+  min-width: 28px;
+  padding-top: 0.25rem;
+}
+
+.itemContent {
+  flex: 1;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.statusIcon {
+  font-size: 1rem;
+  font-weight: bold;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.statusIcon.played {
+  background: #d4edda;
+  color: #155724;
+}
+
+.statusIcon.skipped {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.statusIcon.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.gameName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #212529;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* Update border color based on status */
+.historyItem:has(.played) {
+  border-left-color: #28a745;
+}
+
+.historyItem:has(.skipped) {
+  border-left-color: #dc3545;
+}
+
+.historyItem:has(.pending) {
+  border-left-color: #ffc107;
+}

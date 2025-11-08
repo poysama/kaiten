@@ -18,6 +18,26 @@
   gap: 1rem;
 }
 
+.navCenter {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.roomInfo {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.roomCode {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #00B0FF;
+  margin-left: 0.5rem;
+}
+
 .logo {
   width: 40px;
   height: 40px;
@@ -31,6 +51,7 @@
 .navLinks {
   display: flex;
   gap: 1.5rem;
+  align-items: center;
 }
 
 .navLinks a {
@@ -44,11 +65,57 @@
   opacity: 0.8;
 }
 
+.leaveButton {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.leaveButton:hover {
+  background: #c82333;
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.pageLayout {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.sidebarLeft {
+  flex: 0 0 300px;
+  position: sticky;
+  top: 2rem;
+  align-self: flex-start;
+}
+
+.sidebarRight {
+  flex: 0 0 300px;
+  position: sticky;
+  top: 2rem;
+  align-self: flex-start;
+}
+
 .main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 2rem;
   color: #000;
 }
 
@@ -159,6 +226,33 @@
   margin: 3rem 0;
   width: 100%;
   max-width: 900px;
+}
+
+.buttonContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hostBadge {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  padding: 0.5rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.viewerBadge {
+  background: #6c757d;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .gameGrid {
@@ -344,4 +438,61 @@
 .respinBtn {
   background: #FF0100;
   color: white;
+}
+
+.votingStatus {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.votingStatus p {
+  margin: 0 0 0.5rem 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.voteCount {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Responsive layout */
+@media (max-width: 1024px) {
+  .pageLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    flex: none;
+    position: static;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageLayout {
+    padding: 1rem;
+  }
+
+  .nav {
+    padding: 1rem;
+  }
+
+  .navBrand h1 {
+    font-size: 1.2rem;
+  }
+
+  .navLinks {
+    gap: 1rem;
+  }
+
+  .navLinks a {
+    font-size: 0.9rem;
+  }
 }

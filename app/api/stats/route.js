@@ -5,10 +5,19 @@ import { getRedis } from '@/lib/redis';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request) {
   try {
     const redis = getRedis();
-    const ids = await redis.smembers("games:ids");
+    const { searchParams } = new URL(request.url);
+    const roomCode = searchParams.get('roomCode');
+
+    // Determine which key prefix to use
+    const prefix = roomCode ? `room:${roomCode}:` : '';
+    const idsKey = `${prefix}games:ids`;
+    const gameKeyPrefix = `${prefix}game:`;
+    const statsKeyPrefix = `${prefix}stats:game:`;
+
+    const ids = await redis.smembers(idsKey);
 
     if (!ids || ids.length === 0) {
       return NextResponse.json({ mostPlayed: [], mostSkipped: [], allGames: [] });
@@ -16,8 +25,8 @@ export async function GET() {
 
     const multi = redis.multi();
     ids.forEach(id => {
-      multi.hgetall(`stats:game:${id}`);
-      multi.get(`game:${id}`);
+      multi.hgetall(`${statsKeyPrefix}${id}`);
+      multi.get(`${gameKeyPrefix}${id}`);
     });
 
     const results = await multi.exec();

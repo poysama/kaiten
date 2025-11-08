@@ -9,6 +9,7 @@ import { calculateGameWeight } from '@/lib/weightedSelection';
  * 1. Add 'length' property to all games (default: 'medium')
  * 2. Ensure all stats have 'weight' field calculated correctly
  * 3. Ensure all stats fields exist (picks, played, skipped, weight)
+ * 4. Add 'username' field to all room members
  */
 export async function POST(request) {
   try {
@@ -29,6 +30,8 @@ export async function POST(request) {
       gamesWithoutLength: [],
       statsFixed: 0,
       statsCreated: 0,
+      roomsUpdated: 0,
+      membersUpdated: 0,
       errors: []
     };
 
@@ -141,6 +144,49 @@ export async function POST(request) {
       }
     }
 
+    // Migrate room members to include username
+    console.log('[MIGRATE] Starting room member migration...');
+    const roomCodes = await redis.smembers('rooms:list');
+    console.log(`[MIGRATE] Found ${roomCodes.length} rooms to check`);
+
+    for (const code of roomCodes) {
+      try {
+        const roomData = await redis.get(`room:${code}`);
+
+        if (!roomData) continue;
+
+        const room = JSON.parse(roomData);
+        let roomModified = false;
+
+        // Update members to include username if missing
+        if (room.members && Array.isArray(room.members)) {
+          for (let i = 0; i < room.members.length; i++) {
+            const member = room.members[i];
+
+            // If member doesn't have username, add a default one
+            if (!member.username) {
+              // Generate username from position or host status
+              const isHost = member.id === room.hostId;
+              member.username = isHost ? 'Host' : `User ${i + 1}`;
+              roomModified = true;
+              report.membersUpdated++;
+            }
+          }
+        }
+
+        // Save updated room data if modified
+        if (roomModified) {
+          await redis.set(`room:${code}`, JSON.stringify(room));
+          await redis.expire(`room:${code}`, 86400); // Maintain 24h expiry
+          report.roomsUpdated++;
+          console.log(`[MIGRATE] Updated room: ${code}`);
+        }
+      } catch (error) {
+        console.error(`[MIGRATE] Error processing room ${code}:`, error);
+        report.errors.push(`Room ${code}: ${error.message}`);
+      }
+    }
+
     console.log('[MIGRATE] Migration completed');
     console.log('[MIGRATE] Report:', report);
 
@@ -153,6 +199,9 @@ export async function POST(request) {
         statsFixed: report.statsFixed,
         statsCreated: report.statsCreated,
         gamesWithoutLength: report.gamesWithoutLength,
+        totalRooms: roomCodes.length,
+        roomsUpdated: report.roomsUpdated,
+        membersUpdated: report.membersUpdated,
         errors: report.errors
       }
     });
@@ -178,7 +227,11 @@ export async function GET() {
       gamesNeedingLength: 0,
       gamesWithoutStats: 0,
       gamesWithIncorrectWeight: 0,
-      details: []
+      totalRooms: 0,
+      roomsNeedingUpdate: 0,
+      membersNeedingUsername: 0,
+      details: [],
+      roomDetails: []
     };
 
     const gameIds = await redis.smembers("games:ids");
@@ -234,11 +287,56 @@ export async function GET() {
       }
     }
 
+    // Check room members for missing usernames
+    const roomCodes = await redis.smembers('rooms:list');
+    report.totalRooms = roomCodes.length;
+
+    for (const code of roomCodes) {
+      try {
+        const roomData = await redis.get(`room:${code}`);
+        if (!roomData) continue;
+
+        const room = JSON.parse(roomData);
+        const memberIssues = [];
+
+        if (room.members && Array.isArray(room.members)) {
+          for (let i = 0; i < room.members.length; i++) {
+            const member = room.members[i];
+
+            if (!member.username) {
+              report.membersNeedingUsername++;
+              const isHost = member.id === room.hostId;
+              memberIssues.push({
+                memberId: member.id.substring(0, 12) + '...',
+                willBecome: isHost ? 'Host' : `User ${i + 1}`
+              });
+            }
+          }
+        }
+
+        if (memberIssues.length > 0) {
+          report.roomsNeedingUpdate++;
+          report.roomDetails.push({
+            roomCode: code,
+            roomName: room.name,
+            memberCount: room.members.length,
+            memberIssues
+          });
+        }
+      } catch (error) {
+        report.roomDetails.push({
+          roomCode: code,
+          error: error.message
+        });
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       needsMigration: report.gamesNeedingLength > 0 ||
                        report.gamesWithoutStats > 0 ||
-                       report.gamesWithIncorrectWeight > 0,
+                       report.gamesWithIncorrectWeight > 0 ||
+                       report.roomsNeedingUpdate > 0,
       report
     });
 

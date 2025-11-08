@@ -1,31 +1,57 @@
 .container {
   min-height: 100vh;
-  background: #fff;
+  background: #f5f5f5;
 }
 
-.nav {
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.header {
+  background: #000;
+  color: white;
+  padding: 1.5rem 2rem;
+}
+
+.headerContent {
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background: #000;
-  color: white;
 }
 
-.navBrand {
+.roomInfo {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.logo {
-  width: 40px;
-  height: 40px;
-}
-
-.nav h1 {
+.roomInfo h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.roomCode {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #00B0FF;
+}
+
+.hostBadge {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-block;
+  margin-left: 1rem;
 }
 
 .navLinks {
