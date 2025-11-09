@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from './RoomMembers.module.css';
-import { useWebSocket } from '@/lib/useWebSocket';
+import { useAbly } from '@/lib/useAbly';
 
 export default function RoomMembers() {
   const [roomInfo, setRoomInfo] = useState(null);
@@ -10,8 +10,8 @@ export default function RoomMembers() {
   const [roomCode, setRoomCode] = useState('');
   const [canClaimHost, setCanClaimHost] = useState(false);
 
-  // WebSocket connection
-  const { isConnected, on } = useWebSocket(roomCode);
+  // Ably connection
+  const { isConnected, on } = useAbly(roomCode);
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');

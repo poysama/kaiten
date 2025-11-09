@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './spinner.module.css';
 import GameHistory from './components/GameHistory';
 import RoomMembers from './components/RoomMembers';
-import { useWebSocket } from '@/lib/useWebSocket';
+import { useAbly } from '@/lib/useAbly';
 
 export default function SpinnerPage() {
   const router = useRouter();
@@ -24,8 +24,8 @@ export default function SpinnerPage() {
   const [votes, setVotes] = useState({ confirm: 0, skip: 0 });
   const [roomReady, setRoomReady] = useState(false);
 
-  // WebSocket connection
-  const { isConnected, send, on } = useWebSocket(roomCode);
+  // Ably connection
+  const { isConnected, send, on } = useAbly(roomCode);
 
   useEffect(() => {
     // Check if user is in a room
