@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
+import { broadcastToRoom } from '@/lib/ws-broadcast';
 
 function generateRoomCode() {
   // Generate a 6-character alphanumeric code
@@ -13,7 +14,7 @@ function generateRoomCode() {
 
 export async function POST(request) {
   try {
-    const { action, roomCode, userId, username, newHostId, name } = await request.json();
+    const { action, roomCode, userId, username, newHostId, name, kickUserId } = await request.json();
     const redis = getRedis();
 
     if (action === 'create') {
@@ -72,6 +73,14 @@ export async function POST(request) {
 
       const room = JSON.parse(roomData);
 
+      // Check if username is already taken by another user
+      const usernameExists = room.members.some(m => m.username === username && m.id !== userId);
+      if (usernameExists) {
+        return NextResponse.json({
+          error: `The username "${username}" is already taken. Please choose a different name.`
+        }, { status: 400 });
+      }
+
       // Add user to room if not already a member, or update username if they are
       const memberIndex = room.members.findIndex(m => m.id === userId);
       if (memberIndex === -1) {
@@ -88,6 +97,12 @@ export async function POST(request) {
       await redis.expire(`room:${roomCode.toUpperCase()}`, 86400);
 
       console.log('[ROOM] User joined room:', roomCode, 'userId:', userId, 'username:', username);
+
+      // Broadcast members update
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'members_updated',
+        members: room.members
+      });
 
       return NextResponse.json({
         ok: true,
@@ -151,6 +166,18 @@ export async function POST(request) {
 
       console.log('[ROOM] User claimed host:', roomCode, 'userId:', userId);
 
+      // Broadcast host change and member update to all clients
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'host_transferred',
+        newHostId: userId,
+        oldHostId: null
+      });
+
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'members_updated',
+        members: room.members
+      });
+
       return NextResponse.json({
         ok: true,
         isHost: true
@@ -186,6 +213,61 @@ export async function POST(request) {
       await redis.expire(`room:${roomCode.toUpperCase()}`, 86400);
 
       console.log('[ROOM] Host transferred:', roomCode, 'from:', userId, 'to:', newHostId);
+
+      // Broadcast host transfer to all clients
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'host_transferred',
+        newHostId: newHostId,
+        oldHostId: userId
+      });
+
+      return NextResponse.json({
+        ok: true
+      });
+    }
+
+    if (action === 'kick_member') {
+      if (!roomCode || !kickUserId) {
+        return NextResponse.json({ error: 'Room code and user ID required' }, { status: 400 });
+      }
+
+      const roomData = await redis.get(`room:${roomCode.toUpperCase()}`);
+
+      if (!roomData) {
+        return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+      }
+
+      const room = JSON.parse(roomData);
+
+      // Only host can kick members
+      if (room.hostId !== userId) {
+        return NextResponse.json({ error: 'Only host can kick members' }, { status: 403 });
+      }
+
+      // Can't kick yourself
+      if (kickUserId === userId) {
+        return NextResponse.json({ error: 'Cannot kick yourself' }, { status: 400 });
+      }
+
+      // Remove member from room
+      room.members = room.members.filter(m => m.id !== kickUserId);
+
+      await redis.set(`room:${roomCode.toUpperCase()}`, JSON.stringify(room));
+      await redis.expire(`room:${roomCode.toUpperCase()}`, 86400);
+
+      console.log('[ROOM] User kicked:', kickUserId, 'from room:', roomCode, 'by:', userId);
+
+      // Broadcast members update
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'members_updated',
+        members: room.members
+      });
+
+      // Broadcast kick event to the kicked user
+      await broadcastToRoom(roomCode.toUpperCase(), {
+        type: 'user_kicked',
+        userId: kickUserId
+      });
 
       return NextResponse.json({
         ok: true
@@ -265,6 +347,42 @@ export async function POST(request) {
       return NextResponse.json({
         ok: true,
         rooms
+      });
+    }
+
+    if (action === 'leave') {
+      if (!roomCode || !userId) {
+        return NextResponse.json({ error: 'Room code and user ID required' }, { status: 400 });
+      }
+
+      const roomData = await redis.get(`room:${roomCode.toUpperCase()}`);
+
+      if (!roomData) {
+        return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+      }
+
+      const room = JSON.parse(roomData);
+
+      // Remove user from members
+      const beforeCount = room.members.length;
+      room.members = room.members.filter(m => m.id !== userId);
+      const afterCount = room.members.length;
+
+      if (beforeCount !== afterCount) {
+        await redis.set(`room:${roomCode.toUpperCase()}`, JSON.stringify(room));
+        await redis.expire(`room:${roomCode.toUpperCase()}`, 86400);
+
+        // Broadcast updated members list
+        await broadcastToRoom(roomCode.toUpperCase(), {
+          type: 'members_updated',
+          members: room.members
+        });
+
+        console.log('[ROOM] User left room:', roomCode, 'userId:', userId, `(${beforeCount} -> ${afterCount} members)`);
+      }
+
+      return NextResponse.json({
+        ok: true
       });
     }
 

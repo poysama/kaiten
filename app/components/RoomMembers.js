@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import styles from './RoomMembers.module.css';
+import { useWebSocket } from '@/lib/useWebSocket';
 
 export default function RoomMembers() {
   const [roomInfo, setRoomInfo] = useState(null);
   const [userId, setUserId] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [canClaimHost, setCanClaimHost] = useState(false);
+
+  // WebSocket connection
+  const { isConnected, on } = useWebSocket(roomCode);
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -17,10 +21,79 @@ export default function RoomMembers() {
 
     if (uid && code) {
       loadRoomInfo();
-      const interval = setInterval(loadRoomInfo, 2000);
-      return () => clearInterval(interval);
     }
   }, []);
+
+  // Listen for member updates via WebSocket
+  useEffect(() => {
+    if (!isConnected || !roomCode) return;
+
+    const unsubMembers = on('members_updated', (data) => {
+      console.log('[RoomMembers] Received members update:', data);
+      // Update room info with new members list
+      setRoomInfo(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: data.members,
+          memberCount: data.members.length
+        };
+      });
+
+      // Check if user can claim host
+      if (roomInfo) {
+        const hostInRoom = data.members.some(m => m.id === roomInfo.hostId);
+        setCanClaimHost(!roomInfo.isHost && (!roomInfo.hostId || !hostInRoom));
+      }
+    });
+
+    // Handle being kicked
+    const unsubKicked = on('user_kicked', (data) => {
+      console.log('[RoomMembers] Received kick event:', data);
+      if (data.userId === userId) {
+        alert('You have been kicked from the room by the host');
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('isHost');
+        window.location.href = '/room';
+      }
+    });
+
+    // Handle host transfer
+    const unsubHostTransfer = on('host_transferred', (data) => {
+      console.log('[RoomMembers] Received host transfer:', data);
+      const isNewHost = data.newHostId === userId;
+      const wasHost = data.oldHostId === userId;
+
+      // Update local storage
+      localStorage.setItem('isHost', isNewHost.toString());
+
+      // Update room info
+      setRoomInfo(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          hostId: data.newHostId,
+          isHost: isNewHost
+        };
+      });
+
+      // Update canClaimHost
+      setCanClaimHost(false);
+
+      // Show notification
+      if (isNewHost) {
+        alert('You are now the host!');
+      } else if (wasHost) {
+        alert('You have transferred host privileges');
+      }
+    });
+
+    return () => {
+      unsubMembers();
+      unsubKicked();
+      unsubHostTransfer();
+    };
+  }, [isConnected, roomCode, roomInfo, userId, on]);
 
   async function loadRoomInfo() {
     try {
@@ -62,13 +135,10 @@ export default function RoomMembers() {
 
       const data = await res.json();
 
-      if (data.ok) {
-        alert('You are now the host!');
-        localStorage.setItem('isHost', 'true');
-        window.location.reload(); // Reload to update UI
-      } else {
+      if (!data.ok) {
         alert(data.error || 'Failed to claim host');
       }
+      // Don't reload or show alert - WebSocket event will handle UI update
     } catch (error) {
       alert('Failed to claim host');
     }
@@ -86,15 +156,34 @@ export default function RoomMembers() {
 
       const data = await res.json();
 
-      if (data.ok) {
-        alert('Host transferred successfully!');
-        localStorage.setItem('isHost', 'false');
-        window.location.reload(); // Reload to update UI
-      } else {
+      if (!data.ok) {
         alert(data.error || 'Failed to transfer host');
       }
+      // Don't reload - WebSocket event will handle UI update
     } catch (error) {
       alert('Failed to transfer host');
+    }
+  }
+
+  async function kickMember(kickUserId) {
+    if (!confirm('Kick this user from the room?')) return;
+
+    try {
+      const res = await fetch('/api/room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick_member', roomCode, userId, kickUserId })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        alert('User kicked successfully!');
+      } else {
+        alert(data.error || 'Failed to kick user');
+      }
+    } catch (error) {
+      alert('Failed to kick user');
     }
   }
 
@@ -150,13 +239,23 @@ export default function RoomMembers() {
                 Joined {formatTime(member.joinedAt)}
               </div>
             </div>
-            {roomInfo.isHost && member.id !== userId && member.id !== roomInfo.hostId && (
-              <button
-                onClick={() => transferHost(member.id)}
-                className={styles.transferBtn}
-              >
-                Make Host
-              </button>
+            {roomInfo.isHost && member.id !== userId && (
+              <div className={styles.memberActions}>
+                {member.id !== roomInfo.hostId && (
+                  <button
+                    onClick={() => transferHost(member.id)}
+                    className={styles.transferBtn}
+                  >
+                    Make Host
+                  </button>
+                )}
+                <button
+                  onClick={() => kickMember(member.id)}
+                  className={styles.kickBtn}
+                >
+                  Kick
+                </button>
+              </div>
             )}
           </li>
         ))}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 import { weightedRandomPick, calculateGameWeight } from '@/lib/weightedSelection';
+import { broadcastToRoom } from '@/lib/ws-broadcast';
 
 export async function POST(request) {
   try {
@@ -99,6 +100,12 @@ export async function POST(request) {
 
     console.log('[PICK] Created spinning session:', sessionId, 'for room:', roomCode);
 
+    // Broadcast spinning event to all clients
+    await broadcastToRoom(roomCode, {
+      type: 'session_spinning',
+      session: spinningSession
+    });
+
     // Calculate and store weight for all games
     const weightUpdate = redis.multi();
     games.forEach(game => {
@@ -149,6 +156,12 @@ export async function POST(request) {
     await redis.expire(`game:session:${roomCode}`, 600);
 
     console.log('[PICK] Updated session to active:', sessionId, 'game:', pick.name);
+
+    // Broadcast active session event to all clients
+    await broadcastToRoom(roomCode, {
+      type: 'session_active',
+      session: session
+    });
 
     return NextResponse.json({ index: idx, pick, sessionId });
   } catch (error) {

@@ -75,7 +75,7 @@ export default function StatsPage() {
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.roomInfo}>
-            <h1>Statistics: {roomName}</h1>
+            <h1>Room Statistics: {roomName}</h1>
             <span className={styles.roomCode}>Code: {roomCode}</span>
             {isHost && <span className={styles.hostBadge}>👑 Host</span>}
           </div>

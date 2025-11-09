@@ -28,13 +28,17 @@
 
 .roomInfo {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .roomInfo h1 {
   margin: 0;
   font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .roomCode {
@@ -44,13 +48,19 @@
 }
 
 .hostBadge {
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
   color: #000;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
   font-weight: 700;
-  font-size: 0.85rem;
-  display: inline-block;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  border: 2px solid rgba(255, 215, 0, 0.3);
   margin-left: 1rem;
 }
 

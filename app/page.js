@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './spinner.module.css';
 import GameHistory from './components/GameHistory';
 import RoomMembers from './components/RoomMembers';
+import { useWebSocket } from '@/lib/useWebSocket';
 
 export default function SpinnerPage() {
   const router = useRouter();
@@ -22,6 +23,9 @@ export default function SpinnerPage() {
   const [currentSession, setCurrentSession] = useState(null);
   const [votes, setVotes] = useState({ confirm: 0, skip: 0 });
   const [roomReady, setRoomReady] = useState(false);
+
+  // WebSocket connection
+  const { isConnected, send, on } = useWebSocket(roomCode);
 
   useEffect(() => {
     // Check if user is in a room
@@ -54,14 +58,101 @@ export default function SpinnerPage() {
     }
   }, []);
 
-  // Separate effect for polling that depends on roomReady
+  // WebSocket event handlers
   useEffect(() => {
-    if (!roomReady) return;
+    if (!roomReady || !isConnected) return;
 
-    // Poll for session updates every 1 second
-    const sessionPoll = setInterval(pollSession, 1000);
-    return () => clearInterval(sessionPoll);
-  }, [roomReady]);
+    // Handle spinning start event
+    const unsubSpinning = on('session_spinning', (data) => {
+      console.log('[WS] Received session_spinning:', data);
+      if (!isHost) {
+        setCurrentSession(data.session);
+        setSpinning(true);
+        setShowModal(false);
+
+        // Flash through games randomly
+        const flashDuration = 2500;
+        const flashInterval = 100;
+        const startTime = Date.now();
+
+        const flashTimer = setInterval(() => {
+          const randomIndex = Math.floor(Math.random() * games.length);
+          setHighlightedIndex(randomIndex);
+
+          if (Date.now() - startTime >= flashDuration) {
+            clearInterval(flashTimer);
+            setHighlightedIndex(null);
+          }
+        }, flashInterval);
+      }
+    });
+
+    // Handle game selected event
+    const unsubActive = on('session_active', (data) => {
+      console.log('[WS] Received session_active:', data);
+      if (!isHost) {
+        const game = games.find(g => g.id === data.session.gameId);
+
+        if (game) {
+          setCurrentSession(data.session);
+          setVotes(data.session.votes || { confirm: 0, skip: 0 });
+
+          // Highlight the selected game
+          const selectedIndex = games.findIndex(g => g.id === data.session.gameId);
+          setHighlightedIndex(selectedIndex);
+
+          // Wait for animation to complete (2.5s animation + 0.5s pause = 3s total)
+          setTimeout(() => {
+            setSelectedGame(game);
+            setShowModal(true);
+            setSpinning(false);
+          }, 3000);
+        }
+      }
+    });
+
+    // Handle vote updates
+    const unsubVotes = on('votes_updated', (data) => {
+      console.log('[WS] Received votes_updated:', data);
+      setVotes(data.votes);
+    });
+
+    // Handle session closed
+    const unsubClosed = on('session_closed', (data) => {
+      console.log('[WS] Received session_closed:', data);
+      setShowModal(false);
+      setSelectedGame(null);
+      setCurrentSession(null);
+      setVotes({ confirm: 0, skip: 0 });
+      setSpinning(false);
+      setHighlightedIndex(null);
+    });
+
+    // Handle room members update
+    const unsubMembers = on('members_updated', (data) => {
+      console.log('[WS] Received members_updated:', data);
+      // RoomMembers component will handle this
+    });
+
+    // Handle host transfer
+    const unsubHostTransfer = on('host_transferred', (data) => {
+      console.log('[WS] Received host_transferred:', data);
+      const isNewHost = data.newHostId === userId;
+
+      // Update local state and storage
+      setIsHost(isNewHost);
+      localStorage.setItem('isHost', isNewHost.toString());
+    });
+
+    return () => {
+      unsubSpinning();
+      unsubActive();
+      unsubVotes();
+      unsubClosed();
+      unsubMembers();
+      unsubHostTransfer();
+    };
+  }, [roomReady, isConnected, games, isHost, userId, on]);
 
   function toggleWeighting() {
     const newValue = !weightingEnabled;
@@ -103,94 +194,6 @@ export default function SpinnerPage() {
     setGameStats(statsMap);
   }
 
-  async function pollSession() {
-    if (!roomCode) return;
-
-    const res = await fetch(`/api/session?roomCode=${roomCode}`);
-    const data = await res.json();
-
-    console.log('[POLL] Session data:', data.session);
-
-    if (data.session) {
-      const isNewSession = !currentSession || currentSession.id !== data.session.id;
-      const statusChanged = currentSession && currentSession.status !== data.session.status;
-
-      console.log('[POLL] isNewSession:', isNewSession, 'statusChanged:', statusChanged);
-
-      // Handle NEW "spinning" session - start animation for viewers
-      if (data.session.status === 'spinning' && isNewSession && !isHost) {
-        console.log('[POLL] Starting spinning animation for viewer');
-        setCurrentSession(data.session);
-        setSpinning(true);
-        setShowModal(false);
-
-        // Flash through games randomly
-        const flashDuration = 2500;
-        const flashInterval = 100;
-        const startTime = Date.now();
-
-        const flashTimer = setInterval(() => {
-          const randomIndex = Math.floor(Math.random() * games.length);
-          setHighlightedIndex(randomIndex);
-
-          if (Date.now() - startTime >= flashDuration) {
-            clearInterval(flashTimer);
-            setHighlightedIndex(null);
-            // Animation done, wait for session to become 'active'
-          }
-        }, flashInterval);
-      }
-      // Handle transition from "spinning" to "active" - show the selected game
-      else if (data.session.status === 'active' && statusChanged && !isHost) {
-        console.log('[POLL] Session became active, showing result');
-        const game = games.find(g => g.id === data.session.gameId);
-
-        if (game) {
-          setCurrentSession(data.session);
-          setVotes(data.session.votes || { confirm: 0, skip: 0 });
-
-          // Highlight the selected game
-          const selectedIndex = games.findIndex(g => g.id === data.session.gameId);
-          setHighlightedIndex(selectedIndex);
-
-          // Show modal after a brief pause
-          setTimeout(() => {
-            setSelectedGame(game);
-            setShowModal(true);
-            setSpinning(false);
-          }, 500);
-        }
-      }
-      // Just update current session state and votes
-      else if (data.session.status === 'active') {
-        setCurrentSession(data.session);
-        setVotes(data.session.votes || { confirm: 0, skip: 0 });
-
-        // Update selected game if modal is showing
-        if (showModal && data.session.gameId) {
-          const game = games.find(g => g.id === data.session.gameId);
-          if (game) {
-            setSelectedGame(game);
-          }
-        }
-      }
-      // Update for spinning status (for hosts who created the session)
-      else {
-        setCurrentSession(data.session);
-      }
-    } else {
-      // No active session
-      if (currentSession) {
-        // Session was just closed
-        setShowModal(false);
-        setSelectedGame(null);
-        setCurrentSession(null);
-        setVotes({ confirm: 0, skip: 0 });
-        setSpinning(false);
-        setHighlightedIndex(null);
-      }
-    }
-  }
 
   function calculatePickProbability(gameWeight, allStats) {
     // Calculate total weight of all games
@@ -256,8 +259,8 @@ export default function SpinnerPage() {
   }
 
   async function confirmGame() {
-    // If host, finalize immediately. If not, vote
-    const isVote = !isHost;
+    // Everyone votes (including host)
+    const isVote = true;
 
     const res = await fetch('/api/confirm', {
       method: 'POST',
@@ -267,17 +270,17 @@ export default function SpinnerPage() {
 
     const data = await res.json();
 
-    if (isHost || data.sessionClosed) {
-      // Only close modal for host or when session ends
+    if (data.sessionClosed) {
+      // Close modal when session ends (majority reached)
       setShowModal(false);
       setSelectedGame(null);
     }
-    // Otherwise, votes will update via polling
+    // Otherwise, votes will update via WebSocket
   }
 
   async function skipGame() {
-    // If host, finalize immediately. If not, vote
-    const isVote = !isHost;
+    // Everyone votes (including host)
+    const isVote = true;
 
     const res = await fetch('/api/skip', {
       method: 'POST',
@@ -287,12 +290,12 @@ export default function SpinnerPage() {
 
     const data = await res.json();
 
-    if (isHost || data.sessionClosed) {
-      // Only close modal for host or when session ends
+    if (data.sessionClosed) {
+      // Close modal when session ends (majority reached)
       setShowModal(false);
       setSelectedGame(null);
     }
-    // Otherwise, votes will update via polling
+    // Otherwise, votes will update via WebSocket
   }
 
   function respin() {
@@ -301,8 +304,23 @@ export default function SpinnerPage() {
     spinWheel();
   }
 
-  function leaveRoom() {
+  async function leaveRoom() {
     if (confirm('Are you sure you want to leave this room?')) {
+      try {
+        // Call leave API to remove user from room members
+        await fetch('/api/room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'leave',
+            roomCode: roomCode,
+            userId: userId
+          })
+        });
+      } catch (error) {
+        console.error('[LEAVE] Error leaving room:', error);
+      }
+
       localStorage.removeItem('roomCode');
       localStorage.removeItem('isHost');
       router.push('/room');
@@ -323,6 +341,7 @@ export default function SpinnerPage() {
         <div className={styles.navCenter}>
           <div className={styles.roomInfo}>
             Room Code: <span className={styles.roomCode}>{roomCode}</span>
+            {isHost && <span className={styles.hostBadge}>👑 Host</span>}
           </div>
         </div>
         <div className={styles.navLinks}>
@@ -437,9 +456,9 @@ export default function SpinnerPage() {
             <h2>You got:</h2>
             <h1>{selectedGame.name}</h1>
 
-            {!isHost && votes && (
+            {votes && (
               <div className={styles.votingStatus}>
-                <p>Waiting for votes...</p>
+                <p>Vote to confirm or skip</p>
                 <div className={styles.voteCount}>
                   ✓ Confirm: {votes.confirm} | ✗ Skip: {votes.skip}
                 </div>
@@ -448,10 +467,10 @@ export default function SpinnerPage() {
 
             <div className={styles.modalButtons}>
               <button onClick={confirmGame} className={styles.confirmBtn}>
-                {isHost ? 'Confirm - Let\'s Play!' : 'Vote: Confirm'}
+                Vote: Confirm
               </button>
               <button onClick={skipGame} className={styles.skipBtn}>
-                {isHost ? 'Skip' : 'Vote: Skip'}
+                Vote: Skip
               </button>
               {isHost && (
                 <button onClick={respin} className={styles.respinBtn}>

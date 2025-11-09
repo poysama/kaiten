@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node scripts/populate-redis.js:*)"
+      "Bash(node scripts/populate-redis.js:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm docker:up:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

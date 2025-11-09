@@ -2,16 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import styles from './GameHistory.module.css';
+import { useWebSocket } from '@/lib/useWebSocket';
 
 export default function GameHistory() {
   const [history, setHistory] = useState([]);
+  const [roomCode, setRoomCode] = useState('');
+
+  // WebSocket connection
+  const { isConnected, on } = useWebSocket(roomCode);
 
   useEffect(() => {
+    const code = localStorage.getItem('roomCode');
+    setRoomCode(code);
     loadHistory();
-    // Refresh history every 2 seconds
-    const interval = setInterval(loadHistory, 2000);
-    return () => clearInterval(interval);
   }, []);
+
+  // Listen for history updates via WebSocket
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsubHistory = on('history_updated', (data) => {
+      console.log('[GameHistory] Received history update:', data);
+      // Prepend new entry to history
+      setHistory(prev => [data.entry, ...prev].slice(0, 50));
+    });
+
+    return () => {
+      unsubHistory();
+    };
+  }, [isConnected, on]);
 
   async function loadHistory() {
     try {

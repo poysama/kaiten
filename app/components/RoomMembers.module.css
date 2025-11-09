@@ -109,6 +109,12 @@
   color: #6c757d;
 }
 
+.memberActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .transferBtn {
   padding: 0.5rem 0.75rem;
   background: #00B0FF;
@@ -124,5 +130,23 @@
 
 .transferBtn:hover {
   background: #0099dd;
+  transform: scale(1.05);
+}
+
+.kickBtn {
+  padding: 0.5rem 0.75rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.kickBtn:hover {
+  background: #c82333;
   transform: scale(1.05);
 }
