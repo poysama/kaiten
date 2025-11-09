@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Debug endpoint to check environment variables (without exposing sensitive data)
  */

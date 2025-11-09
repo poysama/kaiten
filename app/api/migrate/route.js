@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 import { calculateGameWeight } from '@/lib/weightedSelection';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Migration endpoint to update existing games with new properties
  *

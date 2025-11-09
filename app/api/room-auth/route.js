@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Room Creator Authentication
  * Simple password-only auth stored in Redis

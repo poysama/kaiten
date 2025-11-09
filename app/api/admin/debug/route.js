@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 
+// Force dynamic rendering - don't try to pre-render during build
+export const dynamic = 'force-dynamic';
+
 /**
  * Debug endpoint to see all Redis data
  */

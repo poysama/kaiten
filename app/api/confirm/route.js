@@ -3,6 +3,8 @@ import { getRedis } from '@/lib/redis';
 import { calculateGameWeight } from '@/lib/weightedSelection';
 import { broadcastToRoom } from '@/lib/ws-broadcast';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { id, isVote, roomCode } = await request.json();

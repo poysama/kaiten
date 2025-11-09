@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DANGEROUS: This endpoint completely clears ALL Redis data
  * Use this to start fresh when migrating or debugging

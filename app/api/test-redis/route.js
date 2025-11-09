@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Test endpoint to directly check Redis operations
  */

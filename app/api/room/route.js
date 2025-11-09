@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
 import { broadcastToRoom } from '@/lib/ws-broadcast';
 
+export const dynamic = 'force-dynamic';
+
 function generateRoomCode() {
   // Generate a 6-character alphanumeric code
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed similar looking chars
