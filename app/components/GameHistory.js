@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import styles from './GameHistory.module.css';
-import { useWebSocket } from '@/lib/useWebSocket';
+import { useAbly } from '@/lib/useAbly';
 
 export default function GameHistory() {
   const [history, setHistory] = useState([]);
   const [roomCode, setRoomCode] = useState('');
 
-  // WebSocket connection
-  const { isConnected, on } = useWebSocket(roomCode);
+  // Ably connection
+  const { isConnected, on } = useAbly(roomCode);
 
   useEffect(() => {
     const code = localStorage.getItem('roomCode');
@@ -81,15 +81,13 @@ export default function GameHistory() {
           {history.map((entry, index) => (
             <li key={`${entry.id}-${entry.timestamp}`} className={styles.historyItem}>
               <div className={styles.itemNumber}>#{index + 1}</div>
+              <span className={`${styles.statusIcon} ${getStatusClass(entry.status)}`}>
+                {getStatusIcon(entry.status)}
+              </span>
               <div className={styles.itemContent}>
-                <div className={styles.itemHeader}>
-                  <span className={`${styles.statusIcon} ${getStatusClass(entry.status)}`}>
-                    {getStatusIcon(entry.status)}
-                  </span>
-                  <span className={styles.time}>{formatTime(entry.timestamp)}</span>
-                </div>
                 <div className={styles.gameName}>{entry.name}</div>
               </div>
+              <span className={styles.time}>{formatTime(entry.timestamp)}</span>
             </li>
           ))}
         </ul>

@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "next start",
     "lint": "next lint",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
@@ -15,10 +15,10 @@
     "migrate:run": "node scripts/migrate.js run"
   },
   "dependencies": {
+    "ably": "^2.14.0",
     "ioredis": "^5.3.2",
     "next": "^14.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "ws": "^8.18.3"
+    "react-dom": "^18.2.0"
   }
 }
